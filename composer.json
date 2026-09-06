@@ -53,6 +53,7 @@
             "@php artisan test"
         ],
         "post-autoload-dump": [
+            "@php -r \"foreach (['storage/framework/sessions', 'storage/framework/views', 'storage/framework/cache/data', 'storage/framework/testing', 'storage/logs'] as \\$d) { is_dir(\\$d) || mkdir(\\$d, 0775, true); }\"",
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
         ],
