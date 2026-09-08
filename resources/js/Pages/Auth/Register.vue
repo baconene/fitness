@@ -21,17 +21,27 @@ const submit = () => {
 </script>
 
 <template>
-    <GuestLayout>
+    <GuestLayout
+        eyebrow="Make room for a stronger you"
+        headline="Big progress."
+        accent="Small beginnings."
+        description="Start where you are. Build a routine you love, one workout at a time."
+    >
         <Head title="Register" />
 
-        <h1 class="text-2xl font-bold text-gray-900">Create your account</h1>
-        <p class="mt-1 text-sm text-gray-500">
-            Start tracking your workouts today.
+        <p class="ui-eyebrow">Every rep starts somewhere</p>
+        <h1 class="ui-title mt-3">Your day one starts here.</h1>
+        <p class="ui-description mt-3">
+            Create your account and give your fitness goals a place to grow.
         </p>
 
-        <form class="mt-6 space-y-4" @submit.prevent="submit">
+        <form
+            class="auth-form"
+            :aria-busy="form.processing"
+            @submit.prevent="submit"
+        >
             <div>
-                <InputLabel for="name" value="Name" />
+                <InputLabel for="name" value="Full name" />
 
                 <TextInput
                     id="name"
@@ -41,13 +51,21 @@ const submit = () => {
                     required
                     autofocus
                     autocomplete="name"
+                    :aria-invalid="Boolean(form.errors.name)"
+                    :aria-describedby="
+                        form.errors.name ? 'name-error' : undefined
+                    "
                 />
 
-                <InputError class="mt-2" :message="form.errors.name" />
+                <InputError
+                    id="name-error"
+                    class="mt-2"
+                    :message="form.errors.name"
+                />
             </div>
 
             <div>
-                <InputLabel for="email" value="Email" />
+                <InputLabel for="email" value="Email address" />
 
                 <TextInput
                     id="email"
@@ -56,9 +74,18 @@ const submit = () => {
                     v-model="form.email"
                     required
                     autocomplete="username"
+                    placeholder="you@example.com"
+                    :aria-invalid="Boolean(form.errors.email)"
+                    :aria-describedby="
+                        form.errors.email ? 'email-error' : undefined
+                    "
                 />
 
-                <InputError class="mt-2" :message="form.errors.email" />
+                <InputError
+                    id="email-error"
+                    class="mt-2"
+                    :message="form.errors.email"
+                />
             </div>
 
             <div>
@@ -71,15 +98,23 @@ const submit = () => {
                     v-model="form.password"
                     required
                     autocomplete="new-password"
+                    :aria-invalid="Boolean(form.errors.password)"
+                    :aria-describedby="
+                        form.errors.password ? 'password-error' : undefined
+                    "
                 />
 
-                <InputError class="mt-2" :message="form.errors.password" />
+                <InputError
+                    id="password-error"
+                    class="mt-2"
+                    :message="form.errors.password"
+                />
             </div>
 
             <div>
                 <InputLabel
                     for="password_confirmation"
-                    value="Confirm Password"
+                    value="Confirm password"
                 />
 
                 <TextInput
@@ -89,31 +124,33 @@ const submit = () => {
                     v-model="form.password_confirmation"
                     required
                     autocomplete="new-password"
+                    :aria-invalid="Boolean(form.errors.password_confirmation)"
+                    :aria-describedby="
+                        form.errors.password_confirmation
+                            ? 'password-confirmation-error'
+                            : undefined
+                    "
                 />
 
                 <InputError
+                    id="password-confirmation-error"
                     class="mt-2"
                     :message="form.errors.password_confirmation"
                 />
             </div>
 
-            <PrimaryButton
-                class="w-full"
-                :class="{ 'opacity-25': form.processing }"
-                :disabled="form.processing"
-            >
-                Create account
+            <PrimaryButton class="w-full" :disabled="form.processing">
+                {{
+                    form.processing
+                        ? 'Creating your account...'
+                        : 'Create my account'
+                }}
             </PrimaryButton>
         </form>
 
-        <p class="mt-6 text-center text-sm text-gray-600">
-            Already registered?
-            <Link
-                :href="route('login')"
-                class="font-semibold text-orange-600 hover:text-orange-500"
-            >
-                Log in
-            </Link>
+        <p class="auth-switch">
+            Already part of FitTrack?
+            <Link :href="route('login')" class="ui-link"> Log in </Link>
         </p>
     </GuestLayout>
 </template>

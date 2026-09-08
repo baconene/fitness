@@ -21,35 +21,42 @@ const submit = () => {
     <GuestLayout>
         <Head title="Confirm Password" />
 
-        <div class="mb-4 text-sm text-gray-600">
-            This is a secure area of the application. Please confirm your
-            password before continuing.
-        </div>
+        <p class="ui-eyebrow">One quick check</p>
+        <h1 class="ui-title mt-3">Confirm it’s you.</h1>
+        <p class="ui-description mt-3">
+            Enter your password to continue to this secure area of your account.
+        </p>
 
-        <form @submit.prevent="submit">
+        <form
+            class="auth-form"
+            :aria-busy="form.processing"
+            @submit.prevent="submit"
+        >
             <div>
                 <InputLabel for="password" value="Password" />
                 <TextInput
                     id="password"
                     type="password"
-                    class="mt-1 block w-full"
+                    class="block w-full"
                     v-model="form.password"
                     required
                     autocomplete="current-password"
                     autofocus
+                    :aria-invalid="Boolean(form.errors.password)"
+                    :aria-describedby="
+                        form.errors.password ? 'password-error' : undefined
+                    "
                 />
-                <InputError class="mt-2" :message="form.errors.password" />
+                <InputError
+                    id="password-error"
+                    class="mt-2"
+                    :message="form.errors.password"
+                />
             </div>
 
-            <div class="mt-4 flex justify-end">
-                <PrimaryButton
-                    class="ms-4"
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
-                >
-                    Confirm
-                </PrimaryButton>
-            </div>
+            <PrimaryButton class="w-full" :disabled="form.processing">
+                {{ form.processing ? 'Confirming...' : 'Confirm password' }}
+            </PrimaryButton>
         </form>
     </GuestLayout>
 </template>

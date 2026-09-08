@@ -35,67 +35,97 @@ const submit = () => {
     <GuestLayout>
         <Head title="Reset Password" />
 
-        <form @submit.prevent="submit">
+        <p class="ui-eyebrow">Ready for your next chapter</p>
+        <h1 class="ui-title mt-3">Reset your password.</h1>
+        <p class="ui-description mt-3">
+            Choose a new password and get back to building your momentum.
+        </p>
+
+        <form
+            class="auth-form"
+            :aria-busy="form.processing"
+            @submit.prevent="submit"
+        >
             <div>
-                <InputLabel for="email" value="Email" />
+                <InputLabel for="email" value="Email address" />
 
                 <TextInput
                     id="email"
                     type="email"
-                    class="mt-1 block w-full"
+                    class="block w-full"
                     v-model="form.email"
                     required
                     autofocus
                     autocomplete="username"
+                    :aria-invalid="Boolean(form.errors.email)"
+                    :aria-describedby="
+                        form.errors.email ? 'email-error' : undefined
+                    "
                 />
 
-                <InputError class="mt-2" :message="form.errors.email" />
+                <InputError
+                    id="email-error"
+                    class="mt-2"
+                    :message="form.errors.email"
+                />
             </div>
 
-            <div class="mt-4">
-                <InputLabel for="password" value="Password" />
+            <div>
+                <InputLabel for="password" value="New password" />
 
                 <TextInput
                     id="password"
                     type="password"
-                    class="mt-1 block w-full"
+                    class="block w-full"
                     v-model="form.password"
                     required
                     autocomplete="new-password"
+                    :aria-invalid="Boolean(form.errors.password)"
+                    :aria-describedby="
+                        form.errors.password ? 'password-error' : undefined
+                    "
                 />
 
-                <InputError class="mt-2" :message="form.errors.password" />
+                <InputError
+                    id="password-error"
+                    class="mt-2"
+                    :message="form.errors.password"
+                />
             </div>
 
-            <div class="mt-4">
+            <div>
                 <InputLabel
                     for="password_confirmation"
-                    value="Confirm Password"
+                    value="Confirm new password"
                 />
 
                 <TextInput
                     id="password_confirmation"
                     type="password"
-                    class="mt-1 block w-full"
+                    class="block w-full"
                     v-model="form.password_confirmation"
                     required
                     autocomplete="new-password"
+                    :aria-invalid="Boolean(form.errors.password_confirmation)"
+                    :aria-describedby="
+                        form.errors.password_confirmation
+                            ? 'password-confirmation-error'
+                            : undefined
+                    "
                 />
 
                 <InputError
+                    id="password-confirmation-error"
                     class="mt-2"
                     :message="form.errors.password_confirmation"
                 />
             </div>
 
-            <div class="mt-4 flex items-center justify-end">
-                <PrimaryButton
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
-                >
-                    Reset Password
-                </PrimaryButton>
-            </div>
+            <PrimaryButton class="w-full" :disabled="form.processing">
+                {{
+                    form.processing ? 'Resetting password...' : 'Reset password'
+                }}
+            </PrimaryButton>
         </form>
     </GuestLayout>
 </template>

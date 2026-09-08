@@ -17,6 +17,76 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    public function hunterProfile()
+    {
+        return $this->hasOne(HunterProfile::class);
+    }
+
+    public function onboardingProgress()
+    {
+        return $this->hasOne(OnboardingProgress::class);
+    }
+
+    public function healthMeasurements()
+    {
+        return $this->hasMany(HealthMeasurement::class);
+    }
+
+    public function fitnessGoals()
+    {
+        return $this->hasMany(FitnessGoal::class);
+    }
+
+    public function trainingPreference()
+    {
+        return $this->hasOne(TrainingPreference::class);
+    }
+
+    public function equipmentProfile()
+    {
+        return $this->hasOne(EquipmentProfile::class);
+    }
+
+    public function healthRestrictions()
+    {
+        return $this->hasMany(HealthRestriction::class);
+    }
+
+    public function workouts()
+    {
+        return $this->hasMany(Workout::class);
+    }
+
+    public function userQuests()
+    {
+        return $this->hasMany(UserQuest::class);
+    }
+
+    public function calendarEvents()
+    {
+        return $this->hasMany(CalendarEvent::class);
+    }
+
+    public function userAchievements()
+    {
+        return $this->hasMany(UserAchievement::class);
+    }
+
+    public function bossEncounters()
+    {
+        return $this->hasMany(BossEncounter::class);
+    }
+
+    public function streak()
+    {
+        return $this->hasOne(Streak::class);
+    }
+
+    public function activityLogs()
+    {
+        return $this->hasMany(ActivityLog::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *
