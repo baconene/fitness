@@ -94,49 +94,45 @@ const handleAwakeningComplete = async () => {
     <GuestLayout>
         <Head title="Onboarding" />
 
-        <div class="min-h-screen flex flex-col items-center justify-center bg-canvas px-4 py-12">
-            <div class="w-full max-w-2xl">
-                <!-- Progress Bar -->
-                <div class="mb-8">
-                    <div class="flex justify-between mb-2">
-                        <h1 class="text-2xl font-bold text-content">
-                            {{ steps[currentStepIndex]?.label || 'Loading...' }}
-                        </h1>
-                        <span class="text-sm text-content-secondary">
-                            {{ currentStepIndex + 1 }} / {{ steps.length }}
-                        </span>
-                    </div>
-                    <div class="w-full h-2 bg-edge rounded-full overflow-hidden">
-                        <div
-                            class="h-full bg-brand transition-all duration-300"
-                            :style="{ width: progressPercent + '%' }"
-                        />
-                    </div>
-                </div>
-
-                <!-- Step Component -->
-                <div class="ui-panel p-8">
-                    <component
-                        v-if="currentStepComponent"
-                        :is="currentStepComponent"
-                        :step-data="stepData[currentStep] || {}"
-                        :is-loading="isLoading"
-                        @complete="
-                            currentStep === 'Awakening'
-                                ? handleAwakeningComplete()
-                                : handleStepComplete($event)
-                        "
-                    />
-                </div>
-
-                <!-- Navigation Hints -->
-                <div class="mt-6 text-center text-sm text-content-secondary">
-                    <p v-if="currentStep !== 'Awakening'">
-                        {{ currentStepIndex + 1 }} of {{ steps.length - 1 }} steps
-                    </p>
-                    <p v-else>Final step - Complete your awakening</p>
-                </div>
+        <!-- Progress Bar -->
+        <div class="mb-8">
+            <div class="flex justify-between mb-2">
+                <h1 class="text-2xl font-bold text-content">
+                    {{ steps[currentStepIndex]?.label || 'Loading...' }}
+                </h1>
+                <span class="text-sm text-content-secondary">
+                    {{ currentStepIndex + 1 }} / {{ steps.length }}
+                </span>
             </div>
+            <div class="w-full h-2 bg-edge rounded-full overflow-hidden">
+                <div
+                    class="h-full bg-brand transition-all duration-300"
+                    :style="{ width: progressPercent + '%' }"
+                />
+            </div>
+        </div>
+
+        <!-- Step Component -->
+        <div class="ui-panel p-8">
+            <component
+                v-if="currentStepComponent"
+                :is="currentStepComponent"
+                :step-data="stepData[currentStep] || {}"
+                :is-loading="isLoading"
+                @complete="
+                    currentStep === 'Awakening'
+                        ? handleAwakeningComplete()
+                        : handleStepComplete($event)
+                "
+            />
+        </div>
+
+        <!-- Navigation Hints -->
+        <div class="mt-6 text-center text-sm text-content-secondary">
+            <p v-if="currentStep !== 'Awakening'">
+                {{ currentStepIndex + 1 }} of {{ steps.length - 1 }} steps
+            </p>
+            <p v-else>Final step - Complete your awakening</p>
         </div>
     </GuestLayout>
 </template>
