@@ -30,24 +30,31 @@ const submit = () => {
 </script>
 
 <template>
-    <GuestLayout>
+    <GuestLayout
+        eyebrow="Keep showing up"
+        headline="Pick up where"
+        accent="you left off."
+        description="Every workout is a step forward. Your next one starts here."
+    >
         <Head title="Log in" />
 
-        <h1 class="text-2xl font-bold text-gray-900">Welcome back</h1>
-        <p class="mt-1 text-sm text-gray-500">
-            Log in to keep tracking your progress.
+        <p class="ui-eyebrow">Your progress is waiting</p>
+        <h1 class="ui-title mt-3">Welcome back.</h1>
+        <p class="ui-description mt-3">
+            Log in, find your rhythm, and keep building on your progress.
         </p>
 
-        <div
-            v-if="status"
-            class="mt-4 rounded-lg bg-green-50 px-4 py-2 text-sm font-medium text-green-600"
-        >
+        <div v-if="status" class="ui-status mt-6" role="status">
             {{ status }}
         </div>
 
-        <form class="mt-6 space-y-4" @submit.prevent="submit">
+        <form
+            class="auth-form"
+            :aria-busy="form.processing"
+            @submit.prevent="submit"
+        >
             <div>
-                <InputLabel for="email" value="Email" />
+                <InputLabel for="email" value="Email address" />
 
                 <TextInput
                     id="email"
@@ -57,9 +64,18 @@ const submit = () => {
                     required
                     autofocus
                     autocomplete="username"
+                    placeholder="you@example.com"
+                    :aria-invalid="Boolean(form.errors.email)"
+                    :aria-describedby="
+                        form.errors.email ? 'email-error' : undefined
+                    "
                 />
 
-                <InputError class="mt-2" :message="form.errors.email" />
+                <InputError
+                    id="email-error"
+                    class="mt-2"
+                    :message="form.errors.email"
+                />
             </div>
 
             <div>
@@ -72,44 +88,45 @@ const submit = () => {
                     v-model="form.password"
                     required
                     autocomplete="current-password"
+                    :aria-invalid="Boolean(form.errors.password)"
+                    :aria-describedby="
+                        form.errors.password ? 'password-error' : undefined
+                    "
                 />
 
-                <InputError class="mt-2" :message="form.errors.password" />
+                <InputError
+                    id="password-error"
+                    class="mt-2"
+                    :message="form.errors.password"
+                />
             </div>
 
-            <div class="flex items-center justify-between">
-                <label class="flex items-center">
+            <div class="auth-options">
+                <label
+                    class="flex cursor-pointer items-center gap-2 text-sm text-muted"
+                >
                     <Checkbox name="remember" v-model:checked="form.remember" />
-                    <span class="ms-2 text-sm text-gray-600"
-                        >Remember me</span
-                    >
+                    <span>Remember me</span>
                 </label>
 
                 <Link
                     v-if="canResetPassword"
                     :href="route('password.request')"
-                    class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                    class="ui-link text-sm"
                 >
                     Forgot password?
                 </Link>
             </div>
 
-            <PrimaryButton
-                class="w-full"
-                :class="{ 'opacity-25': form.processing }"
-                :disabled="form.processing"
-            >
-                Log in
+            <PrimaryButton class="w-full" :disabled="form.processing">
+                {{ form.processing ? 'Logging in...' : 'Log in' }}
             </PrimaryButton>
         </form>
 
-        <p class="mt-6 text-center text-sm text-gray-600">
-            Don't have an account?
-            <Link
-                :href="route('register')"
-                class="font-semibold text-orange-600 hover:text-orange-500"
-            >
-                Sign up
+        <p class="auth-switch">
+            New to FitTrack?
+            <Link :href="route('register')" class="ui-link">
+                Start your journey
             </Link>
         </p>
     </GuestLayout>

@@ -4,7 +4,7 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 
 defineProps({
     status: {
@@ -25,44 +25,59 @@ const submit = () => {
     <GuestLayout>
         <Head title="Forgot Password" />
 
-        <div class="mb-4 text-sm text-gray-600">
-            Forgot your password? No problem. Just let us know your email
-            address and we will email you a password reset link that will allow
-            you to choose a new one.
-        </div>
+        <p class="ui-eyebrow">Get back on track</p>
+        <h1 class="ui-title mt-3">A fresh start.</h1>
+        <p class="ui-description mt-3">
+            Enter your email address and we’ll send you a link to reset your
+            password. Your progress will be here when you return.
+        </p>
 
-        <div
-            v-if="status"
-            class="mb-4 text-sm font-medium text-green-600"
-        >
+        <div v-if="status" class="ui-status mt-6" role="status">
             {{ status }}
         </div>
 
-        <form @submit.prevent="submit">
+        <form
+            class="auth-form"
+            :aria-busy="form.processing"
+            @submit.prevent="submit"
+        >
             <div>
-                <InputLabel for="email" value="Email" />
+                <InputLabel for="email" value="Email address" />
 
                 <TextInput
                     id="email"
                     type="email"
-                    class="mt-1 block w-full"
+                    class="block w-full"
                     v-model="form.email"
                     required
                     autofocus
                     autocomplete="username"
+                    placeholder="you@example.com"
+                    :aria-invalid="Boolean(form.errors.email)"
+                    :aria-describedby="
+                        form.errors.email ? 'email-error' : undefined
+                    "
                 />
 
-                <InputError class="mt-2" :message="form.errors.email" />
+                <InputError
+                    id="email-error"
+                    class="mt-2"
+                    :message="form.errors.email"
+                />
             </div>
 
-            <div class="mt-4 flex items-center justify-end">
-                <PrimaryButton
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
-                >
-                    Email Password Reset Link
-                </PrimaryButton>
-            </div>
+            <PrimaryButton class="w-full" :disabled="form.processing">
+                {{
+                    form.processing
+                        ? 'Sending reset link...'
+                        : 'Send reset link'
+                }}
+            </PrimaryButton>
         </form>
+
+        <p class="auth-switch">
+            Remembered your password?
+            <Link :href="route('login')" class="ui-link">Back to log in</Link>
+        </p>
     </GuestLayout>
 </template>

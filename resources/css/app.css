@@ -1,3 +1,441 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    /* Hunter System — dark fantasy command center */
+    :root {
+        color-scheme: dark;
+        --color-canvas: 5 9 20;
+        --color-canvas-deep: 3 6 14;
+        --color-surface: 11 18 32;
+        --color-surface-raised: 16 25 44;
+        --color-edge: 110 140 255;
+        --color-content: 234 242 255;
+        --color-muted: 130 144 170;
+        --color-brand: 54 163 255;
+        --color-brand-hover: 122 194 255;
+        --color-violet: 118 87 255;
+        --color-violet-light: 161 140 255;
+        --color-on-brand: 5 9 20;
+        --color-danger: 255 118 118;
+        --color-success: 74 222 168;
+        --font-display: 'Cinzel', 'Georgia', serif;
+        --font-ui: 'Inter', system-ui, sans-serif;
+        --radius-control: 0.375rem;
+        --radius-panel: 0.5rem;
+    }
+
+    body {
+        background: rgb(var(--color-canvas-deep));
+        color: rgb(var(--color-content));
+        font-family: var(--font-ui);
+    }
+
+    ::selection {
+        background: rgb(var(--color-brand) / 0.3);
+    }
+    :where(a, button, input, select, textarea):focus-visible {
+        outline: 2px solid rgb(var(--color-brand));
+        outline-offset: 4px;
+    }
+    :where(button, a) {
+        -webkit-tap-highlight-color: transparent;
+    }
+    button:disabled {
+        cursor: not-allowed;
+    }
+}
+
+@layer components {
+    .ui-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+        min-height: 3.375rem;
+        padding: 0.875rem 1.5rem;
+        border: 1px solid transparent;
+        border-radius: var(--radius-control);
+        background: rgb(var(--color-brand));
+        color: rgb(var(--color-on-brand));
+        font-size: 0.875rem;
+        font-weight: 700;
+        line-height: 1.5;
+        text-align: center;
+        transition:
+            background 180ms,
+            border-color 180ms,
+            transform 180ms;
+    }
+    .ui-button:hover:not(:disabled) {
+        background: rgb(var(--color-brand-hover));
+        transform: translateY(-2px);
+    }
+    .ui-button:disabled {
+        opacity: 0.55;
+    }
+    .ui-button-small {
+        min-height: 2.625rem;
+        padding: 0.625rem 1rem;
+        font-size: 0.75rem;
+    }
+    .ui-button-secondary {
+        background: rgb(var(--color-surface));
+        color: rgb(var(--color-content));
+        border-color: rgb(var(--color-edge));
+    }
+    .ui-button-secondary:hover:not(:disabled) {
+        background: rgb(var(--color-surface-raised));
+        border-color: rgb(var(--color-brand));
+    }
+    .ui-button-danger {
+        background: rgb(var(--color-danger));
+        color: rgb(var(--color-on-brand));
+    }
+    .ui-button-danger:hover:not(:disabled) {
+        background: rgb(var(--color-danger) / 0.85);
+    }
+    .ui-input {
+        display: block;
+        border: 1px solid rgb(var(--color-edge));
+        border-radius: var(--radius-control);
+        background: rgb(var(--color-canvas));
+        color: rgb(var(--color-content));
+        padding: 0.875rem 1rem;
+        font-size: 1rem;
+        line-height: 1.5;
+        transition:
+            border-color 180ms,
+            box-shadow 180ms;
+    }
+    .ui-input::placeholder {
+        color: rgb(var(--color-muted) / 0.75);
+    }
+    .ui-input:focus {
+        border-color: rgb(var(--color-brand));
+        --tw-ring-color: rgb(var(--color-brand) / 0.2);
+        box-shadow: 0 0 0 3px rgb(var(--color-brand) / 0.12);
+        outline: none;
+    }
+    .ui-input[aria-invalid='true'] {
+        border-color: rgb(var(--color-danger));
+    }
+    .ui-input:disabled {
+        opacity: 0.55;
+    }
+    .ui-input:-webkit-autofill {
+        -webkit-text-fill-color: rgb(var(--color-content));
+        -webkit-box-shadow: 0 0 0 1000px rgb(var(--color-canvas)) inset;
+        caret-color: rgb(var(--color-content));
+    }
+    .ui-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: rgb(var(--color-content));
+        font-size: 0.8125rem;
+        font-weight: 600;
+    }
+    .ui-error {
+        color: rgb(var(--color-danger));
+        font-size: 0.8125rem;
+        line-height: 1.6;
+    }
+    .ui-checkbox {
+        height: 1.125rem;
+        width: 1.125rem;
+        border-color: rgb(var(--color-edge));
+        border-radius: 0.25rem;
+        background-color: rgb(var(--color-canvas));
+        color: rgb(var(--color-brand));
+    }
+    .ui-checkbox:focus {
+        --tw-ring-color: rgb(var(--color-brand));
+        --tw-ring-offset-color: rgb(var(--color-canvas));
+    }
+    .ui-checkbox:checked {
+        background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='%23171b12' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+    }
+    .ui-eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: rgb(var(--color-brand));
+        font-size: 0.625rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        line-height: 1.6;
+        text-transform: uppercase;
+    }
+    .ui-title {
+        color: rgb(var(--color-content));
+        font-size: clamp(1.875rem, 3vw, 2.5rem);
+        font-weight: 800;
+        line-height: 1.12;
+        letter-spacing: -0.045em;
+    }
+    .ui-description {
+        margin-top: 0.75rem;
+        color: rgb(var(--color-muted));
+        font-size: 0.875rem;
+        line-height: 1.8;
+    }
+    .ui-link {
+        color: rgb(var(--color-brand));
+        font-size: inherit;
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 4px;
+        text-decoration-color: transparent;
+        transition:
+            color 180ms,
+            text-decoration-color 180ms;
+    }
+    .ui-link:hover {
+        color: rgb(var(--color-brand-hover));
+        text-decoration-color: currentColor;
+    }
+    .ui-status {
+        margin-top: 1.5rem;
+        padding: 0.875rem 1rem;
+        border: 1px solid rgb(var(--color-brand) / 0.25);
+        border-radius: var(--radius-control);
+        background: rgb(var(--color-brand) / 0.06);
+        color: rgb(var(--color-brand));
+        font-size: 0.875rem;
+        line-height: 1.6;
+    }
+    .ui-panel {
+        background: rgb(var(--color-surface));
+        border: 1px solid rgb(var(--color-edge) / 0.35);
+        border-radius: var(--radius-panel);
+    }
+
+    /* ---- Hunter System dashboard primitives ---- */
+
+    /* Translucent HUD panel with an illuminated hairline border. */
+    .sys-panel {
+        position: relative;
+        background:
+            linear-gradient(
+                160deg,
+                rgba(16, 25, 44, 0.92) 0%,
+                rgba(10, 17, 32, 0.86) 45%,
+                rgba(8, 13, 26, 0.9) 100%
+            );
+        border: 1px solid rgb(var(--color-edge) / 0.28);
+        border-radius: var(--radius-panel);
+        box-shadow:
+            inset 0 1px 0 rgb(var(--color-edge) / 0.14),
+            0 18px 40px -28px rgba(0, 0, 0, 0.9);
+    }
+    .sys-panel-hover {
+        transition:
+            border-color 220ms ease,
+            box-shadow 220ms ease,
+            transform 220ms ease;
+    }
+    .sys-panel-hover:hover {
+        border-color: rgb(var(--color-brand) / 0.45);
+        box-shadow:
+            inset 0 1px 0 rgb(var(--color-edge) / 0.2),
+            0 0 0 1px rgb(var(--color-brand) / 0.12),
+            0 22px 46px -26px rgba(54, 163, 255, 0.35);
+        transform: translateY(-2px);
+    }
+
+    /* Angular tech corner brackets drawn with pseudo elements. */
+    .sys-corners::before,
+    .sys-corners::after {
+        content: '';
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        border-color: rgb(var(--color-brand) / 0.55);
+        pointer-events: none;
+    }
+    .sys-corners::before {
+        top: -1px;
+        left: -1px;
+        border-top: 1px solid;
+        border-left: 1px solid;
+    }
+    .sys-corners::after {
+        bottom: -1px;
+        right: -1px;
+        border-bottom: 1px solid;
+        border-right: 1px solid;
+    }
+    .sys-corners-x::before,
+    .sys-corners-x::after {
+        content: '';
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        border-color: rgb(var(--color-brand) / 0.55);
+        pointer-events: none;
+    }
+    .sys-corners-x::before {
+        top: -1px;
+        right: -1px;
+        border-top: 1px solid;
+        border-right: 1px solid;
+    }
+    .sys-corners-x::after {
+        bottom: -1px;
+        left: -1px;
+        border-bottom: 1px solid;
+        border-left: 1px solid;
+    }
+
+    /* Serif small-caps section label, e.g. TODAY'S MISSION. */
+    .sys-label {
+        font-family: var(--font-display);
+        font-size: 0.9375rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        color: rgb(var(--color-content));
+        text-transform: uppercase;
+    }
+    .sys-label-sm {
+        font-family: var(--font-ui);
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.16em;
+        color: rgb(var(--color-muted));
+        text-transform: uppercase;
+    }
+    .sys-display {
+        font-family: var(--font-display);
+        font-weight: 700;
+        letter-spacing: 0.02em;
+    }
+
+    /* Circular icon badge used on metric cards. */
+    .sys-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 3rem;
+        height: 3rem;
+        flex: none;
+        border-radius: 9999px;
+        background: radial-gradient(
+            circle at 50% 35%,
+            rgba(28, 42, 74, 0.95) 0%,
+            rgba(11, 18, 32, 0.95) 100%
+        );
+        border: 1px solid rgb(var(--color-edge) / 0.3);
+        box-shadow: inset 0 0 12px rgba(54, 163, 255, 0.12);
+    }
+
+    /* Thin track + gradient fill progress bar. */
+    .sys-track {
+        height: 0.375rem;
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.06);
+        overflow: hidden;
+    }
+    .sys-fill {
+        height: 100%;
+        border-radius: 9999px;
+        background: linear-gradient(90deg, rgb(var(--color-brand)), rgb(var(--color-violet-light)));
+        box-shadow: 0 0 10px rgb(var(--color-brand) / 0.55);
+        transition: width 600ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Primary call to action. */
+    .sys-cta {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        width: 100%;
+        padding: 0.9375rem 1.5rem;
+        border-radius: 9999px;
+        background: linear-gradient(
+            90deg,
+            rgb(var(--color-violet)) 0%,
+            rgb(var(--color-brand)) 55%,
+            rgb(122, 194, 255) 100%
+        );
+        color: #061021;
+        font-weight: 700;
+        font-size: 0.9375rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        box-shadow: 0 0 24px -4px rgba(90, 130, 255, 0.6);
+        transition:
+            box-shadow 220ms ease,
+            transform 220ms ease;
+    }
+    .sys-cta:hover {
+        box-shadow: 0 0 38px -2px rgba(120, 160, 255, 0.85);
+        transform: translateY(-1px) scale(1.01);
+    }
+    .sys-cta:active {
+        transform: translateY(0) scale(0.99);
+    }
+
+    /* Small outlined pill, e.g. STRENGTH / 45 MIN. */
+    .sys-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        border: 1px solid rgb(var(--color-edge) / 0.35);
+        background: rgba(255, 255, 255, 0.03);
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        color: rgb(var(--color-muted));
+        text-transform: uppercase;
+    }
+    .sys-pill-active {
+        border-color: rgb(var(--color-brand) / 0.6);
+        background: rgb(var(--color-brand) / 0.12);
+        color: rgb(var(--color-brand-hover));
+    }
+
+    /* Row separator used in list panels. */
+    .sys-divider {
+        border-top: 1px solid rgb(var(--color-edge) / 0.14);
+    }
+    .auth-form {
+        margin-top: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+    .auth-switch {
+        margin-top: 1.75rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid rgb(var(--color-edge));
+        text-align: center;
+        color: rgb(var(--color-muted));
+        font-size: 0.8125rem;
+        line-height: 1.8;
+    }
+    .auth-options {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        color: rgb(var(--color-muted));
+        font-size: 0.8125rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
