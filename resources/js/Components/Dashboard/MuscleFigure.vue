@@ -49,7 +49,7 @@ const bind = (muscle) => {
     };
 };
 
-/** Structural outlines (head, neck) never light up. */
+/** Structural outlines (head, neck, hands, feet) never light up. */
 const inert = {
     fill: 'rgba(180, 200, 235, 0.03)',
     stroke: 'rgba(130, 144, 170, 0.4)',
@@ -75,115 +75,110 @@ const sides = ['', 'translate(120,0) scale(-1,1)'];
         </defs>
 
         <!-- Head + neck -->
-        <ellipse cx="60" cy="20" rx="11" ry="13" v-bind="inert" />
-        <path d="M53 31 L53 41 Q60 45.5 67 41 L67 31 Z" v-bind="inert" />
+        <ellipse cx="60" cy="17" rx="9.5" ry="11.5" v-bind="inert" />
+        <path d="M53 28 L53 38 Q60 42.5 67 38 L67 28 Z" v-bind="inert" />
 
         <!-- Mirrored half -->
         <g v-for="(transform, i) in sides" :key="i" :transform="transform">
-            <!-- Trapezius reads as upper back from behind, shoulder line from the front -->
+            <!-- Trapezius: shoulder slope from the front, neck-to-blade diamond half from behind -->
             <path
-                d="M58 41 L37 53 Q44 46 50 42.5 Q54 40.5 58 41 Z"
-                v-bind="bind(isFront ? 'shoulders' : 'upper_back')"
+                v-if="isFront"
+                d="M59 38 Q52 39 47 42 Q40 46 36 52 Q42 44 48 40 Q54 37.5 59 38 Z"
+                v-bind="bind('shoulders')"
             />
+            <path v-else d="M61 38 Q57 46 55.5 56 Q60.5 59 65 56 Q63.5 46 61 38 Z" v-bind="bind('upper_back')" />
 
-            <!-- Deltoid -->
+            <!-- Deltoid cap -->
             <path
-                d="M50 46 Q36 47 30 57 Q27 66 31 73 Q40 72 45 63 Q47 53 50 46 Z"
+                d="M50 42 Q35 44.5 30 54 Q26 64 30 72.5 Q40 71.5 46 61.5 Q49.5 51.5 50 42 Z"
                 v-bind="bind('shoulders')"
             />
 
-            <!-- Pectoral (front) / Latissimus (back) -->
+            <!-- Pectoral (front) / Latissimus dorsi (back) -->
             <path
                 v-if="isFront"
-                d="M51 48 Q58 46 59 51.5 L59 79 Q49 80 44 72 Q41.5 58 46 50 Q48 48 51 48 Z"
+                d="M51 46 Q60 44 61.5 52 L61 77 Q50 79 45 70 Q42 57 46 49 Q48 46 51 46 Z"
                 v-bind="bind('chest')"
             />
             <path
                 v-else
-                d="M47 56 Q40 71 42 89 Q44 103 50 113 L53 61 Q50 57 47 56 Z"
+                d="M46 55 Q38 72 41 92 Q43.5 106.5 50.5 116.5 L54.5 60 Q50 56 46 55 Z"
                 v-bind="bind('lats')"
-            />
-
-            <!-- Upper back detail, back view only -->
-            <path
-                v-if="!isFront"
-                d="M53 48 Q47 52 46 60 L52 60 Q54 53 56 49 Z"
-                v-bind="bind('upper_back')"
             />
 
             <!-- Biceps (front) / Triceps (back) -->
             <path
                 v-if="isFront"
-                d="M31 73 Q26 82 26 93 L35 95 Q37.5 84 35 73 Z"
+                d="M30 72.5 Q25 82.5 25.5 94.5 L35 96.5 Q37.5 84.5 34.5 72.5 Z"
                 v-bind="bind('biceps')"
             />
             <path
                 v-else
-                d="M30.5 72 Q24.5 82 25.5 94 L34.5 96 Q36.5 84 34 72 Z"
+                d="M30 72.5 Q24 82.5 24.5 95.5 L34.5 97.5 Q37 84.5 34 72.5 Z"
                 v-bind="bind('triceps')"
             />
 
             <!-- Forearm -->
             <path
-                d="M26 96 Q22 110 24 125 L32 127 Q34.5 111 34 98 Z"
+                d="M25 97.5 Q20.5 112.5 23 128.5 L32 130.5 Q35 113.5 34 99.5 Z"
                 v-bind="bind('forearms')"
             />
 
             <!-- Hand -->
-            <ellipse cx="27.5" cy="134" rx="4.6" ry="7.5" v-bind="inert" />
+            <ellipse cx="27" cy="137" rx="4.8" ry="7.8" v-bind="inert" />
 
             <!-- Obliques (front only) -->
             <path
                 v-if="isFront"
-                d="M45 79 Q42 94 45 110 L51 124 L51 85 Q48 82 45 79 Z"
+                d="M45 79 Q41.5 95 44.5 112 L51 126 L51 86 Q48 82 45 79 Z"
                 v-bind="bind('obliques')"
             />
 
             <!-- Glutes (back only) -->
             <path
                 v-if="!isFront"
-                d="M46 121 Q38.5 128 40 139 Q42 148 49.5 149 L58 147 L58 123 Z"
+                d="M45 120 Q37 127 38.5 138 Q40.5 148 49 149.5 L58 147.5 L58 122 Z"
                 v-bind="bind('glutes')"
             />
 
             <!-- Quadriceps (front) / Hamstrings (back) -->
             <path
                 v-if="isFront"
-                d="M47 132 Q40 152 41 176 Q42 197 47 207 L57 205 Q58 180 57 156 L56 133 Z"
+                d="M46 128 Q39 148 40 172 Q41 194 46 205 L57 203 Q58.5 178 57.5 154 L56.5 129 Z"
                 v-bind="bind('quads')"
             />
             <path
                 v-else
-                d="M47 148 Q40.5 165 42 183 Q43.5 199 47 208 L57 206 Q58 184 57 162 L56.5 148 Z"
+                d="M46 145 Q39.5 163 41 182 Q42.5 199 46 208 L57 206 Q58.5 184 57.5 161 L56.5 146 Z"
                 v-bind="bind('hamstrings')"
             />
 
-            <!-- Calf -->
+            <!-- Calf (gastrocnemius bulge tapering to ankle) -->
             <path
-                d="M45.5 211 Q39.5 226 42 243 Q44 255 48 259 L55 257 Q56.5 236 55.5 213 Z"
+                d="M45.5 211 Q37.5 220 39 232 Q40.5 246 44 256 Q46 260 49 260 L55.5 258 Q58 238 56.5 213 Z"
                 v-bind="bind('calves')"
             />
 
             <!-- Foot -->
-            <path d="M46.5 262 L44.5 276 Q43.5 282 48.5 283 L56 282 L56 262 Z" v-bind="inert" />
+            <path d="M46 262 L44 277 Q43 283 48.5 284 L56.5 283 L56.5 262 Z" v-bind="inert" />
         </g>
 
-        <!-- Abdominals: three stacked pairs -->
+        <!-- Abdominals: three stacked pairs with a sternum-line gap at centre -->
         <template v-if="isFront">
             <g v-for="row in 3" :key="`ab-${row}`">
                 <rect
-                    :x="52.5"
-                    :y="83 + (row - 1) * 14"
+                    :x="52"
+                    :y="80 + (row - 1) * 14.5"
                     width="6.5"
-                    height="11.5"
+                    height="12"
                     rx="2.4"
                     v-bind="bind('abs')"
                 />
                 <rect
-                    :x="61"
-                    :y="83 + (row - 1) * 14"
+                    :x="61.5"
+                    :y="80 + (row - 1) * 14.5"
                     width="6.5"
-                    height="11.5"
+                    height="12"
                     rx="2.4"
                     v-bind="bind('abs')"
                 />
@@ -192,16 +187,8 @@ const sides = ['', 'translate(120,0) scale(-1,1)'];
 
         <!-- Lower back + spine -->
         <template v-else>
-            <path
-                d="M52.5 100 L67.5 100 L66 126 Q60 130 54 126 Z"
-                v-bind="bind('lower_back')"
-            />
-            <path
-                d="M60 48 L60 100"
-                fill="none"
-                stroke="rgba(130,144,170,0.35)"
-                stroke-width="0.7"
-            />
+            <path d="M52 100 L68 100 L66.5 122 Q60 126 53.5 122 Z" v-bind="bind('lower_back')" />
+            <path d="M60 45 L60 100" fill="none" stroke="rgba(130,144,170,0.35)" stroke-width="0.7" />
         </template>
     </svg>
 </template>
