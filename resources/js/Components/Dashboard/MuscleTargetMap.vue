@@ -82,6 +82,28 @@ onMounted(() => {
             </div>
         </div>
 
+        <!-- State legend -->
+        <div class="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
+            <span class="flex items-center gap-1.5 text-[10.5px] text-muted">
+                <span
+                    class="h-2.5 w-2.5 shrink-0 rounded-full border-[1.5px]"
+                    style="border-color: rgb(150, 222, 255); box-shadow: 0 0 5px rgba(70, 190, 255, 0.8)"
+                />
+                Primary Target
+            </span>
+            <span class="flex items-center gap-1.5 text-[10.5px] text-muted">
+                <span
+                    class="h-2.5 w-2.5 shrink-0 rounded-full border-[1.5px]"
+                    style="border-color: rgb(196, 178, 255); box-shadow: 0 0 5px rgba(146, 118, 255, 0.6)"
+                />
+                Secondary Target
+            </span>
+            <span class="flex items-center gap-1.5 text-[10.5px] text-muted">
+                <span class="h-2.5 w-2.5 shrink-0 rounded-full border-[1.5px] border-content/30" />
+                Inactive
+            </span>
+        </div>
+
         <!-- Muscle lists -->
         <div class="mt-5 grid grid-cols-2 gap-4">
             <div>

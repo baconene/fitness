@@ -26,15 +26,15 @@ const state = (muscle) => {
 };
 
 const FILL = {
-    primary: 'rgba(54, 163, 255, 0.45)',
-    secondary: 'rgba(118, 87, 255, 0.26)',
-    idle: 'rgba(180, 200, 235, 0.035)',
+    primary: 'rgba(70, 190, 255, 0.75)',
+    secondary: 'rgba(146, 118, 255, 0.62)',
+    idle: 'rgba(92, 106, 138, 0.6)',
 };
 
 const STROKE = {
-    primary: 'rgb(96, 190, 255)',
-    secondary: 'rgba(161, 140, 255, 0.85)',
-    idle: 'rgba(130, 144, 170, 0.45)',
+    primary: 'rgb(150, 222, 255)',
+    secondary: 'rgb(196, 178, 255)',
+    idle: 'rgba(198, 209, 230, 0.65)',
 };
 
 /** Binds fill/stroke/filter for a muscle group in one go. */
@@ -44,16 +44,16 @@ const bind = (muscle) => {
     return {
         fill: FILL[s],
         stroke: STROKE[s],
-        'stroke-width': s === 'idle' ? 0.7 : 1,
-        filter: s === 'primary' ? `url(#${glowId})` : undefined,
+        'stroke-width': s === 'idle' ? 1 : 1.3,
+        filter: s !== 'idle' ? `url(#${glowId})` : undefined,
     };
 };
 
 /** Structural outlines (head, neck, hands, feet) never light up. */
 const inert = {
-    fill: 'rgba(180, 200, 235, 0.03)',
-    stroke: 'rgba(130, 144, 170, 0.4)',
-    'stroke-width': 0.7,
+    fill: 'rgba(70, 82, 106, 0.45)',
+    stroke: 'rgba(198, 209, 230, 0.55)',
+    'stroke-width': 0.9,
 };
 
 const isFront = computed(() => props.view === 'front');
@@ -188,7 +188,7 @@ const sides = ['', 'translate(120,0) scale(-1,1)'];
         <!-- Lower back + spine -->
         <template v-else>
             <path d="M52 100 L68 100 L66.5 122 Q60 126 53.5 122 Z" v-bind="bind('lower_back')" />
-            <path d="M60 45 L60 100" fill="none" stroke="rgba(130,144,170,0.35)" stroke-width="0.7" />
+            <path d="M60 45 L60 100" fill="none" stroke="rgba(198,209,230,0.4)" stroke-width="0.8" />
         </template>
     </svg>
 </template>
