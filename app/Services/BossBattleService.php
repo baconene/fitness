@@ -14,17 +14,24 @@ class BossBattleService
 
     public function startEncounter(User $user, Boss $boss): BossEncounter
     {
-        return $user->bossEncounters()->create([
-            'boss_id' => $boss->id,
-            'status' => 'Active',
-            'current_health' => $boss->max_health,
-            'started_at' => now(),
-        ]);
+        return DB::transaction(function () use ($user, $boss) {
+            $user->hunterProfile()->lockForUpdate()->first();
+
+            return $user->bossEncounters()->firstOrCreate(
+                ['status' => 'Active'],
+                ['boss_id' => $boss->id, 'current_health' => $boss->max_health, 'started_at' => now()],
+            );
+        });
     }
 
     public function applyDamage(BossEncounter $encounter, int $damageAmount, string $idempotencyKey): int
     {
         return DB::transaction(function () use ($encounter, $damageAmount, $idempotencyKey) {
+            $encounter = BossEncounter::whereKey($encounter->id)->lockForUpdate()->firstOrFail();
+            if ($encounter->status !== 'Active' || $damageAmount <= 0) {
+                return $encounter->current_health;
+            }
+
             $existingEvent = BossDamageEvent::where('boss_encounter_id', $encounter->id)
                 ->where('idempotency_key', $idempotencyKey)
                 ->first();
@@ -53,6 +60,10 @@ class BossBattleService
 
     public function resolveEncounter(BossEncounter $encounter): void
     {
+        if ($encounter->status !== 'Active' || $encounter->current_health > 0) {
+            return;
+        }
+
         $encounter->update([
             'status' => 'Defeated',
             'ended_at' => now(),

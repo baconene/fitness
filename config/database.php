@@ -39,7 +39,10 @@ return [
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
             'busy_timeout' => null,
-            'journal_mode' => null,
+            // WAL keeps one persistent -wal/-shm pair instead of creating and
+            // deleting a rollback journal on every write. On synced folders
+            // (OneDrive, Dropbox) that churn causes intermittent SQLITE_CANTOPEN.
+            'journal_mode' => env('DB_JOURNAL_MODE', 'wal'),
             'synchronous' => null,
             'transaction_mode' => 'DEFERRED',
         ],

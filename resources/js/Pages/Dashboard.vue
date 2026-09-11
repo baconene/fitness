@@ -13,16 +13,22 @@ import TodayMissionCard from '@/Components/Dashboard/TodayMissionCard.vue';
 import DailyQuestCard from '@/Components/Dashboard/DailyQuestCard.vue';
 import WeeklyProgressCard from '@/Components/Dashboard/WeeklyProgressCard.vue';
 import UpcomingWorkoutCard from '@/Components/Dashboard/UpcomingWorkoutCard.vue';
+import HunterStatsCard from '@/Components/Dashboard/HunterStatsCard.vue';
+import AchievementsCard from '@/Components/Dashboard/AchievementsCard.vue';
+import SystemsCard from '@/Components/Dashboard/SystemsCard.vue';
 import { prefersReducedMotion } from '@/Composables/useReducedMotion';
 
 defineProps({
     hunter: { type: Object, required: true },
+    stats: { type: Object, required: true },
     health: { type: Object, required: true },
     todayWorkout: { type: Object, required: true },
     targetMuscles: { type: Object, required: true },
     dailyQuests: { type: Array, default: () => [] },
     weeklyProgress: { type: Object, required: true },
     upcomingWorkouts: { type: Array, default: () => [] },
+    achievements: { type: Object, required: true },
+    systems: { type: Object, required: true },
 });
 
 const navOpen = ref(false);
@@ -62,6 +68,7 @@ onMounted(() => {
                 :level="hunter.level"
                 :current-xp="hunter.currentXp"
                 :required-xp="hunter.requiredXp"
+                :title="hunter.title"
                 @toggle-nav="navOpen = true"
             />
 
@@ -106,11 +113,12 @@ onMounted(() => {
                             :duration-minutes="todayWorkout.durationMinutes"
                             :exercises="todayWorkout.exercises"
                             :start-href="todayWorkout.startHref"
+                            :start-method="todayWorkout.startMethod"
                             :details-href="todayWorkout.detailsHref"
                         />
                     </div>
 
-                    <!-- Bottom row -->
+                    <!-- Quests / weekly / schedule -->
                     <div data-stagger class="lg:col-span-4">
                         <DailyQuestCard :quests="dailyQuests" />
                     </div>
@@ -126,6 +134,33 @@ onMounted(() => {
                     </div>
                     <div data-stagger class="lg:col-span-4">
                         <UpcomingWorkoutCard :workouts="upcomingWorkouts" />
+                    </div>
+
+                    <!-- Attributes / achievements / systems -->
+                    <div data-stagger class="lg:col-span-4">
+                        <HunterStatsCard
+                            :attributes="stats.attributes"
+                            :points-available="stats.pointsAvailable"
+                            :next-rank="stats.nextRank"
+                            :next-rank-level="stats.nextRankLevel"
+                            :rank-progress="stats.rankProgress"
+                        />
+                    </div>
+                    <div data-stagger class="lg:col-span-4">
+                        <AchievementsCard
+                            :recent="achievements.recent"
+                            :unlocked-count="achievements.unlockedCount"
+                            :total-count="achievements.totalCount"
+                            :next="achievements.next"
+                        />
+                    </div>
+                    <div data-stagger class="lg:col-span-4">
+                        <SystemsCard
+                            :inventory-count="systems.inventoryCount"
+                            :skills-learned="systems.skillsLearned"
+                            :titles-unlocked="systems.titlesUnlocked"
+                            :active-dungeon="systems.activeDungeon"
+                        />
                     </div>
                 </div>
 

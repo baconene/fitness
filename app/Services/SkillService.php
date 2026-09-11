@@ -42,9 +42,11 @@ class SkillService
             $levelUpThreshold = 100 * $userSkill->level;
             while ($userSkill->experience >= $levelUpThreshold && $userSkill->level < $skill->max_level) {
                 $userSkill->experience -= $levelUpThreshold;
-                $userSkill->increment('level');
+                $userSkill->level++;
                 $levelUpThreshold = 100 * $userSkill->level;
             }
+
+            $userSkill->save();
 
             return $userSkill->fresh();
         });

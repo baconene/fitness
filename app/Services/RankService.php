@@ -40,6 +40,20 @@ class RankService
         return false;
     }
 
+    /**
+     * The level at which a rank unlocks, for "next promotion" display.
+     */
+    public function getLevelForRank(HunterRank $rank): int
+    {
+        foreach ($this->rankThresholds as $levelThreshold => $rankEnum) {
+            if ($rankEnum === $rank) {
+                return $levelThreshold;
+            }
+        }
+
+        return 1;
+    }
+
     public function getNextRank(HunterRank $current): ?HunterRank
     {
         $ranks = [

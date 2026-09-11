@@ -3,17 +3,63 @@
 namespace App\Http\Controllers\Workouts;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\StoreWorkoutRequest;
+use App\Http\Requests\UpdateWorkoutRequest;
+use App\Models\Exercise;
+use App\Models\ProgramDay;
+use App\Models\Workout;
+use App\Services\WorkoutService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class WorkoutController extends Controller
 {
-    public function index()
-    {
-        $workouts = Auth::user()->workouts()->with('workoutExercises.exercise')->latest()->paginate(10);
+    public function __construct(private WorkoutService $workoutService) {}
 
+    public function index(Request $request): Response
+    {
         return Inertia::render('Workouts/Index', [
-            'workouts' => $workouts,
+            'workouts' => $request->user()->workouts()->with('workoutExercises.exercise', 'workoutExercises.workoutSets')->latest()->paginate(12),
+            'exercises' => Exercise::where('is_active', true)->orderBy('name')->get(['id', 'name', 'exercise_type', 'primary_muscle', 'equipment_required', 'difficulty']),
+            'activeWorkout' => $request->user()->workouts()->where('status', 'in_progress')->latest()->first(['id', 'name']),
         ]);
+    }
+
+    public function store(StoreWorkoutRequest $request): RedirectResponse
+    {
+        $data = $request->validated();
+        $programDay = isset($data['program_day_id'])
+            ? ProgramDay::with('programWeek.trainingProgram', 'programExercises.exercise')->findOrFail($data['program_day_id'])
+            : null;
+
+        if ($programDay) {
+            $program = $programDay->programWeek->trainingProgram;
+            abort_unless($program->is_system_program || $program->created_by_user_id === $request->user()->id, 403);
+            abort_if($programDay->is_rest_day || $programDay->programExercises->isEmpty(), 422, 'Choose a training day with exercises.');
+        }
+
+        $workout = $this->workoutService->createWorkout($request->user(), $data, $programDay);
+
+        return $workout->status === 'in_progress'
+            ? to_route('workouts.live.show', $workout)
+            : to_route('workouts.index')->with('success', 'Mission scheduled. Your calendar is updated.');
+    }
+
+    public function start(Request $request, Workout $workout): RedirectResponse
+    {
+        Gate::authorize('update', $workout);
+        $workout = $this->workoutService->resumeWorkout($request->user(), $workout);
+
+        return to_route('workouts.live.show', $workout);
+    }
+
+    public function update(UpdateWorkoutRequest $request, Workout $workout): RedirectResponse
+    {
+        $this->workoutService->updateWorkout($workout, $request->validated());
+
+        return back()->with('success', 'Mission updated.');
     }
 }

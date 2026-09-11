@@ -2,10 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\WorkoutStatus;
+use App\Models\Achievement;
 use App\Models\HunterProfile;
 use App\Models\User;
 use App\Models\Workout;
+use App\Services\AchievementService;
+use App\Services\DungeonService;
 use App\Services\ExperienceService;
+use App\Services\InventoryService;
+use App\Services\QuestGenerationService;
+use App\Services\RankService;
+use App\Services\SkillService;
+use App\Services\TitleService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -23,7 +32,16 @@ class DashboardController extends Controller
         'glutes', 'quads', 'hamstrings', 'calves',
     ];
 
-    public function __construct(private ExperienceService $experienceService) {}
+    public function __construct(
+        private ExperienceService $experienceService,
+        private RankService $rankService,
+        private QuestGenerationService $questGenerationService,
+        private AchievementService $achievementService,
+        private TitleService $titleService,
+        private InventoryService $inventoryService,
+        private SkillService $skillService,
+        private DungeonService $dungeonService,
+    ) {}
 
     public function show(): Response|RedirectResponse
     {
@@ -35,25 +53,45 @@ class DashboardController extends Controller
             return redirect()->route('onboarding.show');
         }
 
+        $this->refreshDerivedState($user);
+
         $todayWorkout = $this->todayWorkout($user);
 
         return Inertia::render('Dashboard', [
             'hunter' => $this->hunter($profile),
+            'stats' => $this->stats($profile),
             'health' => $this->health($user),
             'todayWorkout' => $this->workoutPayload($todayWorkout),
             'targetMuscles' => $this->targetMuscles($todayWorkout),
             'dailyQuests' => $this->dailyQuests($user),
             'weeklyProgress' => $this->weeklyProgress($user),
             'upcomingWorkouts' => $this->upcomingWorkouts($user),
+            'achievements' => $this->achievements($user),
+            'systems' => $this->systems($user),
         ]);
     }
 
     /**
-     * @return array{name: string, rank: string, level: int, currentXp: int, requiredXp: int}
+     * Brings lazily-generated state up to date on visit, so the dashboard is
+     * correct without depending on the scheduler having run.
+     *
+     * Both operations are idempotent — quests are unique per
+     * (user, template, date) and achievement unlocks per (user, achievement).
+     */
+    private function refreshDerivedState(User $user): void
+    {
+        $this->questGenerationService->generateDailyQuests($user);
+        $this->questGenerationService->generateWeeklyQuests($user);
+        $this->achievementService->evaluateForUser($user);
+    }
+
+    /**
+     * @return array{name: string, rank: string, level: int, currentXp: int, requiredXp: int, title: ?string}
      */
     private function hunter(HunterProfile $profile): array
     {
         $progress = $this->experienceService->getLevelProgress($profile);
+        $activeTitle = $this->titleService->getActiveTitle($profile->user);
 
         return [
             'name' => $profile->codename ?? 'Hunter',
@@ -61,6 +99,39 @@ class DashboardController extends Controller
             'level' => (int) $profile->current_level,
             'currentXp' => $progress['current'],
             'requiredXp' => $progress['required'],
+            'title' => $activeTitle?->title?->name,
+        ];
+    }
+
+    /**
+     * The five attributes, plus progress toward the next rank promotion.
+     */
+    private function stats(HunterProfile $profile): array
+    {
+        $stats = $profile->stats;
+        $rank = $profile->rank;
+        $nextRank = $this->rankService->getNextRank($rank);
+        $level = (int) $profile->current_level;
+
+        $nextRankLevel = $nextRank ? $this->rankService->getLevelForRank($nextRank) : null;
+        $currentRankLevel = $this->rankService->getLevelForRank($rank);
+
+        return [
+            'attributes' => [
+                ['key' => 'strength', 'label' => 'STR', 'name' => 'Strength', 'value' => (int) ($stats?->strength ?? 10)],
+                ['key' => 'endurance', 'label' => 'END', 'name' => 'Endurance', 'value' => (int) ($stats?->endurance ?? 10)],
+                ['key' => 'agility', 'label' => 'AGI', 'name' => 'Agility', 'value' => (int) ($stats?->agility ?? 10)],
+                ['key' => 'vitality', 'label' => 'VIT', 'name' => 'Vitality', 'value' => (int) ($stats?->vitality ?? 10)],
+                ['key' => 'willpower', 'label' => 'WIL', 'name' => 'Willpower', 'value' => (int) ($stats?->willpower ?? 10)],
+            ],
+            'pointsAvailable' => (int) ($stats?->stat_points_available ?? 0),
+            'nextRank' => $nextRank?->value,
+            'nextRankLevel' => $nextRankLevel,
+            'rankProgress' => $nextRankLevel && $nextRankLevel > $currentRankLevel
+                ? (int) round(
+                    max(0, min(1, ($level - $currentRankLevel) / ($nextRankLevel - $currentRankLevel))) * 100
+                )
+                : 100,
         ];
     }
 
@@ -124,6 +195,7 @@ class DashboardController extends Controller
                 'durationMinutes' => 0,
                 'exercises' => [],
                 'startHref' => route('workouts.index'),
+                'startMethod' => 'get',
                 'detailsHref' => route('workouts.index'),
             ];
         }
@@ -148,7 +220,11 @@ class DashboardController extends Controller
             'focus' => 'Strength',
             'durationMinutes' => 45,
             'exercises' => $exercises,
-            'startHref' => route('workouts.live.show', $workout),
+            // A planned mission must be started before live mode will accept it.
+            'startHref' => $workout->status === 'in_progress'
+                ? route('workouts.live.show', $workout)
+                : route('workouts.start', $workout),
+            'startMethod' => $workout->status === 'in_progress' ? 'get' : 'post',
             'detailsHref' => route('workouts.index'),
         ];
     }
@@ -210,8 +286,9 @@ class DashboardController extends Controller
             ->get()
             ->map(fn ($quest) => [
                 'name' => $quest->questTemplate?->name ?? 'Quest',
-                'current' => (float) ($quest->progress?->current_value ?? 0),
-                'target' => (float) ($quest->questTemplate?->target_value ?? 1),
+                'current' => (int) ($quest->progress?->current_value ?? 0),
+                'target' => (int) ($quest->questTemplate?->target_value ?? 1),
+                'xpReward' => (int) ($quest->questTemplate?->xp_reward_base ?? 0),
             ])
             ->values()
             ->all();
@@ -222,7 +299,7 @@ class DashboardController extends Controller
         $weekStart = Carbon::now()->startOfWeek();
 
         $completed = $user->workouts()
-            ->where('status', 'Completed')
+            ->where('status', WorkoutStatus::Completed->value)
             ->whereBetween('completed_at', [$weekStart, Carbon::now()])
             ->get();
 
@@ -273,5 +350,86 @@ class DashboardController extends Controller
             ])
             ->values()
             ->all();
+    }
+
+    /**
+     * Recently unlocked achievements plus the closest one still locked.
+     */
+    private function achievements(User $user): array
+    {
+        $unlocked = $user->userAchievements()
+            ->with('achievement')
+            ->orderByDesc('unlocked_at')
+            ->limit(4)
+            ->get()
+            ->map(fn ($record) => [
+                'name' => $record->achievement?->name ?? 'Achievement',
+                'description' => $record->achievement?->description,
+                'xpReward' => (int) ($record->achievement?->xp_reward ?? 0),
+                'unlockedAt' => $record->unlocked_at?->diffForHumans(),
+            ])
+            ->values()
+            ->all();
+
+        $unlockedIds = $user->userAchievements()->pluck('achievement_id');
+
+        return [
+            'recent' => $unlocked,
+            'unlockedCount' => $unlockedIds->count(),
+            'totalCount' => Achievement::where('is_active', true)->count(),
+            'next' => $this->nextAchievement($user, $unlockedIds->all()),
+        ];
+    }
+
+    /**
+     * The cheapest locked achievement, as a "what to chase next" hint.
+     */
+    private function nextAchievement(User $user, array $unlockedIds): ?array
+    {
+        $candidate = Achievement::where('is_active', true)
+            ->where('is_hidden', false)
+            ->whereNotIn('id', $unlockedIds)
+            ->orderBy('criteria_value')
+            ->first();
+
+        if (! $candidate) {
+            return null;
+        }
+
+        $current = match ($candidate->criteria_type) {
+            'WorkoutsCompleted' => $user->workouts()->where('status', WorkoutStatus::Completed->value)->count(),
+            'QuestsCompleted' => $user->userQuests()->where('status', 'Completed')->count(),
+            'TotalXpEarned' => (int) ($user->hunterProfile?->total_xp_earned ?? 0),
+            'LevelReached' => (int) ($user->hunterProfile?->current_level ?? 1),
+            'BossesDefeated' => $user->bossEncounters()->where('status', 'Defeated')->count(),
+            default => 0,
+        };
+
+        return [
+            'name' => $candidate->name,
+            'description' => $candidate->description,
+            'current' => $current,
+            'target' => (int) $candidate->criteria_value,
+        ];
+    }
+
+    /**
+     * Phase 2 systems, surfaced as a compact status strip.
+     */
+    private function systems(User $user): array
+    {
+        $activeRun = $this->dungeonService->getUserActiveRun($user);
+
+        return [
+            'inventoryCount' => (int) $this->inventoryService->getInventory($user)->sum('quantity'),
+            'skillsLearned' => $this->skillService->getUserSkills($user)->count(),
+            'titlesUnlocked' => $this->titleService->getUserTitles($user)->count(),
+            'activeDungeon' => $activeRun ? [
+                'name' => $activeRun->dungeon?->name ?? 'Dungeon',
+                'floor' => (int) $activeRun->current_floor,
+                'floorCount' => (int) ($activeRun->dungeon?->floor_count ?? 0),
+                'xpEarned' => (int) $activeRun->total_xp_earned,
+            ] : null,
+        ];
     }
 }
