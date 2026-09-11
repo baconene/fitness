@@ -15,11 +15,23 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        // Reference data, seeded in FK-dependency order. Every seeder is
+        // idempotent (updateOrCreate) so this is safe to re-run.
+        $this->call([
+            RankDefinitionSeeder::class,
+            ExerciseCategorySeeder::class,
+            ExerciseSeeder::class,
+            QuestTemplateSeeder::class,
+            AchievementSeeder::class,
+            TitleSeeder::class,
+            SkillSeeder::class,
         ]);
+
+        if (! User::where('email', 'test@example.com')->exists()) {
+            User::factory()->create([
+                'name' => 'Test User',
+                'email' => 'test@example.com',
+            ]);
+        }
     }
 }

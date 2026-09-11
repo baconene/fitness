@@ -10,6 +10,7 @@ const props = defineProps({
     level: { type: Number, default: 1 },
     currentXp: { type: Number, default: 0 },
     requiredXp: { type: Number, default: 100 },
+    title: { type: [String, null], default: null },
     quote: {
         type: String,
         default: 'THE ONLY LIMIT IS THE ONE YOU ACCEPT.',
@@ -171,13 +172,18 @@ onMounted(() => {
                         {{ hunterName.toUpperCase() }}
                     </h1>
 
-                    <p
-                        data-hero-line
-                        class="sys-display mt-3 text-[15px] text-content/80"
-                        style="letter-spacing: 0.1em"
-                    >
-                        {{ rank }}-RANK HUNTER
-                    </p>
+                    <div data-hero-line class="mt-3 flex flex-wrap items-center gap-3">
+                        <p
+                            class="sys-display text-[15px] text-content/80"
+                            style="letter-spacing: 0.1em"
+                        >
+                            {{ rank }}-RANK HUNTER
+                        </p>
+                        <span v-if="title" class="sys-pill sys-pill-active">
+                            <Icon name="trophy" :size="11" />
+                            {{ title }}
+                        </span>
+                    </div>
 
                     <p
                         data-hero-line
