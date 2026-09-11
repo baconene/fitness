@@ -113,6 +113,7 @@ onMounted(() => {
                             :duration-minutes="todayWorkout.durationMinutes"
                             :exercises="todayWorkout.exercises"
                             :start-href="todayWorkout.startHref"
+                            :start-method="todayWorkout.startMethod"
                             :details-href="todayWorkout.detailsHref"
                         />
                     </div>

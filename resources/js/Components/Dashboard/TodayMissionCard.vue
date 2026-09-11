@@ -8,6 +8,7 @@ defineProps({
     durationMinutes: { type: Number, default: 0 },
     exercises: { type: Array, default: () => [] },
     startHref: { type: String, default: '/workouts' },
+    startMethod: { type: String, default: 'get' },
     detailsHref: { type: String, default: '/workouts' },
 });
 
@@ -129,7 +130,7 @@ const prescription = (exercise) =>
 
         <!-- Primary action -->
         <div class="px-5 pb-5">
-            <Link :href="startHref" class="sys-cta group mx-auto max-w-md">
+            <Link :href="startHref" :method="startMethod" :as="startMethod === 'post' ? 'button' : 'a'" class="sys-cta group mx-auto max-w-md">
                 Start Workout
                 <span class="transition-transform group-hover:translate-x-1">
                     <Icon name="arrowRight" :size="16" :stroke-width="2" />

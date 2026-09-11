@@ -21,6 +21,7 @@ class ProgramController extends Controller
             'programs' => TrainingProgram::where(fn ($query) => $query->where('is_system_program', true)->orWhere('created_by_user_id', $request->user()->id))
                 ->with('programWeeks.programDays.programExercises.exercise')->orderBy('difficulty')->get(),
             'enrollments' => UserProgramEnrollment::where('user_id', $request->user()->id)->get(),
+            'today' => now($request->user()->timezone())->toDateString(),
         ]);
     }
 

@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, reactive } from 'vue';
 import { router } from '@inertiajs/vue3';
 import HunterLayout from '@/Layouts/HunterLayout.vue';
 import Icon from '@/Components/Icon.vue';
@@ -7,20 +7,48 @@ import Icon from '@/Components/Icon.vue';
 const props = defineProps({
     programs: { type: Array, default: () => [] },
     enrollments: { type: Array, default: () => [] },
+    today: { type: String, required: true },
 });
 
 const enrolledIds = computed(() => new Set(props.enrollments.map((e) => e.training_program_id)));
 
-const dayCount = (program) =>
-    (program.program_weeks || []).reduce((total, week) => total + (week.program_days?.length || 0), 0);
+/** Enrolling schedules every training day, so the start date matters. */
+const startDates = reactive(
+    Object.fromEntries(props.programs.map((program) => [program.id, props.today]))
+);
+
+const errors = reactive({});
+const pending = reactive({});
+
+const trainingDays = (program) =>
+    (program.program_weeks || []).reduce(
+        (total, week) =>
+            total + (week.program_days || []).filter((day) => !day.is_rest_day && (day.program_exercises || []).length).length,
+        0
+    );
 
 const enroll = (program) => {
-    router.post(route('programs.enroll', program.id), {}, { preserveScroll: true });
+    errors[program.id] = null;
+    pending[program.id] = true;
+
+    router.post(
+        route('programs.enroll', program.id),
+        { start_date: startDates[program.id] },
+        {
+            preserveScroll: true,
+            onError: (bag) => {
+                errors[program.id] = bag.start_date || 'Could not enroll in this program.';
+            },
+            onFinish: () => {
+                pending[program.id] = false;
+            },
+        }
+    );
 };
 </script>
 
 <template>
-    <HunterLayout title="Programs" subtitle="Structured training plans you can follow week by week.">
+    <HunterLayout title="Programs" subtitle="Structured plans that schedule your missions for you.">
         <ul v-if="programs.length" class="grid gap-4 lg:grid-cols-2">
             <li
                 v-for="program in programs"
@@ -44,20 +72,40 @@ const enroll = (program) => {
                     {{ program.description }}
                 </p>
 
-                <div class="sys-divider mt-4 flex items-center justify-between pt-4">
-                    <span class="text-[12px] text-muted">{{ dayCount(program) }} training days</span>
+                <p class="mt-3 text-[12px] text-muted">
+                    {{ trainingDays(program) }} training days will be scheduled.
+                </p>
 
-                    <span v-if="enrolledIds.has(program.id)" class="sys-pill sys-pill-active">
-                        <Icon name="checkCircle" :size="12" /> Enrolled
-                    </span>
-                    <button
-                        v-else
-                        type="button"
-                        class="sys-pill min-h-9 hover:border-brand/50"
-                        @click="enroll(program)"
-                    >
-                        Enroll <Icon name="arrowRight" :size="12" />
-                    </button>
+                <div class="sys-divider mt-4 pt-4">
+                    <div v-if="enrolledIds.has(program.id)" class="flex items-center justify-between">
+                        <span class="text-[12px] text-muted">Missions already in your training log.</span>
+                        <span class="sys-pill sys-pill-active">
+                            <Icon name="checkCircle" :size="12" /> Enrolled
+                        </span>
+                    </div>
+
+                    <div v-else class="flex flex-wrap items-end gap-3">
+                        <label class="min-w-[150px] flex-1">
+                            <span class="ui-label">Start date</span>
+                            <input
+                                v-model="startDates[program.id]"
+                                type="date"
+                                :min="today"
+                                class="ui-input w-full"
+                            />
+                        </label>
+                        <button
+                            type="button"
+                            class="sys-pill sys-pill-active min-h-11 px-5"
+                            :disabled="pending[program.id]"
+                            @click="enroll(program)"
+                        >
+                            {{ pending[program.id] ? 'Scheduling' : 'Enroll' }}
+                            <Icon name="arrowRight" :size="12" />
+                        </button>
+                    </div>
+
+                    <p v-if="errors[program.id]" class="ui-error mt-2">{{ errors[program.id] }}</p>
                 </div>
             </li>
         </ul>

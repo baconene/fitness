@@ -195,6 +195,7 @@ class DashboardController extends Controller
                 'durationMinutes' => 0,
                 'exercises' => [],
                 'startHref' => route('workouts.index'),
+                'startMethod' => 'get',
                 'detailsHref' => route('workouts.index'),
             ];
         }
@@ -219,7 +220,11 @@ class DashboardController extends Controller
             'focus' => 'Strength',
             'durationMinutes' => 45,
             'exercises' => $exercises,
-            'startHref' => route('workouts.live.show', $workout),
+            // A planned mission must be started before live mode will accept it.
+            'startHref' => $workout->status === 'in_progress'
+                ? route('workouts.live.show', $workout)
+                : route('workouts.start', $workout),
+            'startMethod' => $workout->status === 'in_progress' ? 'get' : 'post',
             'detailsHref' => route('workouts.index'),
         ];
     }
