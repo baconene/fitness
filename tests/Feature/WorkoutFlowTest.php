@@ -147,4 +147,60 @@ class WorkoutFlowTest extends TestCase
 
         $this->assertDatabaseCount('user_program_enrollments', 0);
     }
+
+    public function test_a_multi_week_program_schedules_every_training_day_in_order(): void
+    {
+        $user = $this->awakenedUser();
+        $exercise = $this->exercise();
+        $start = now()->startOfDay();
+
+        $program = TrainingProgram::create([
+            'name' => 'Upper Lower Split',
+            'slug' => 'upper-lower-split',
+            'difficulty' => 'intermediate',
+            'focus' => 'strength',
+            'duration_weeks' => 6,
+            'is_system_program' => true,
+        ]);
+
+        // 6 weeks x 5 days, of which 4 are training days: 24 workouts in one
+        // transaction. This is the volume that surfaced the SQLite journal fault.
+        for ($weekNumber = 1; $weekNumber <= 6; $weekNumber++) {
+            $week = $program->programWeeks()->create(['week_number' => $weekNumber]);
+
+            foreach ([1, 2, 4, 5] as $dayNumber) {
+                $day = $week->programDays()->create([
+                    'day_number' => $dayNumber,
+                    'name' => "Day {$dayNumber}",
+                ]);
+                $day->programExercises()->create([
+                    'exercise_id' => $exercise->id,
+                    'order' => 1,
+                    'target_sets' => 3,
+                ]);
+            }
+
+            $week->programDays()->create([
+                'day_number' => 3,
+                'name' => 'Rest',
+                'is_rest_day' => true,
+            ]);
+        }
+
+        $this->actingAs($user)
+            ->post(route('programs.enroll', $program), ['start_date' => $start->toDateString()])
+            ->assertRedirect(route('workouts.index'));
+
+        $this->assertSame(24, $user->workouts()->count());
+
+        // Week 2 day 4 lands 10 days after the start: (2-1)*7 + (4-1).
+        $this->assertTrue(
+            $user->workouts()
+                ->whereDate('scheduled_date', $start->copy()->addDays(10)->toDateString())
+                ->exists()
+        );
+
+        // Each scheduled mission carries its prescription: 3 sets per workout.
+        $this->assertSame(3, $user->workouts()->firstOrFail()->workoutSets()->count());
+    }
 }
