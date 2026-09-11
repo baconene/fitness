@@ -1,0 +1,85 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Enums\GoalType;
+use App\Models\FitnessGoal;
+use App\Services\QuestGenerationService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class HealthController extends Controller
+{
+    public function index(Request $request): Response
+    {
+        $user = $request->user();
+
+        return Inertia::render('Health/Index', [
+            'measurements' => $user->healthMeasurements()->orderBy('measured_at')->orderBy('id')->get(),
+            'goals' => $user->fitnessGoals()->orderByDesc('is_primary')->latest()->get(),
+            'goalTypes' => array_map(fn (GoalType $type): array => ['value' => $type->value, 'label' => ucwords(str_replace('_', ' ', $type->value))], GoalType::cases()),
+            'today' => now($user->timezone())->toDateString(),
+        ]);
+    }
+
+    public function storeMeasurement(Request $request, QuestGenerationService $quests): RedirectResponse
+    {
+        $today = now($request->user()->timezone())->toDateString();
+        $data = $request->validate([
+            'measured_at' => ['required', 'date_format:Y-m-d', 'before_or_equal:'.$today],
+            'weight_kg' => ['required', 'numeric', 'between:1,600'],
+            'height_cm' => ['nullable', 'numeric', 'between:30,300'],
+            'body_fat_pct' => ['nullable', 'numeric', 'between:0,80'],
+            'resting_heart_rate' => ['nullable', 'integer', 'between:20,250'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+        $request->user()->healthMeasurements()->create($data);
+        $quests->synchronizeProgress($request->user());
+
+        return back()->with('success', 'Measurement saved to your history.');
+    }
+
+    public function storeGoal(Request $request): RedirectResponse
+    {
+        $this->saveGoal($request);
+
+        return back()->with('success', 'New objective saved.');
+    }
+
+    public function updateGoal(Request $request, FitnessGoal $goal): RedirectResponse
+    {
+        abort_unless($goal->user_id === $request->user()->id, 403);
+        $this->saveGoal($request, $goal);
+
+        return back()->with('success', 'Objective updated.');
+    }
+
+    private function saveGoal(Request $request, ?FitnessGoal $goal = null): void
+    {
+        $data = $request->validate([
+            'goal_type' => ['required', Rule::enum(GoalType::class)],
+            'target_value' => ['nullable', 'numeric', 'min:0', 'max:999999'],
+            'target_unit' => ['nullable', 'string', Rule::in(['kg', 'km', 'minutes', 'sessions', 'reps', '%'])],
+            'target_date' => ['nullable', 'date_format:Y-m-d'],
+            'is_primary' => ['required', 'boolean'],
+            'status' => ['required', Rule::in(['active', 'completed', 'paused'])],
+        ]);
+
+        DB::transaction(function () use ($request, $goal, $data): void {
+            $request->user()->newQuery()->lockForUpdate()->findOrFail($request->user()->id);
+            if ($data['is_primary']) {
+                $request->user()->fitnessGoals()->update(['is_primary' => false]);
+            }
+
+            if ($goal) {
+                $goal->update($data);
+            } else {
+                $request->user()->fitnessGoals()->create($data);
+            }
+        });
+    }
+}

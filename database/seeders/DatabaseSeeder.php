@@ -25,6 +25,8 @@ class DatabaseSeeder extends Seeder
             AchievementSeeder::class,
             TitleSeeder::class,
             SkillSeeder::class,
+            RpgContentSeeder::class,
+            TrainingProgramSeeder::class,
         ]);
 
         if (! User::where('email', 'test@example.com')->exists()) {

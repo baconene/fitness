@@ -17,6 +17,8 @@ class WorkoutSet extends Model
         'reps_completed',
         'weight_kg',
         'rpe',
+        'duration_seconds',
+        'distance_km',
         'is_completed',
         'completed_at',
         'xp_awarded',

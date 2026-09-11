@@ -134,10 +134,11 @@ class M4ProgressionTest extends TestCase
         // XP should be the same (no double-award)
         $this->assertEquals($xpAfterFirst, $xpAfterSecond);
 
-        // Should only have one XP transaction with this idempotency key
+        // The XP key is derived from the set, not the client-supplied key, so a
+        // client cannot force a second award by varying its own key.
         $this->assertEquals(
             1,
-            ExperienceTransaction::where('idempotency_key', "{$key}:xp:{$set->id}")->count()
+            ExperienceTransaction::where('idempotency_key', "workout-set:{$set->id}:xp")->count()
         );
     }
 }

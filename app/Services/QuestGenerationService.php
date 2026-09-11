@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use App\Enums\StatChangeReason;
+use App\Enums\StatType;
+use App\Models\PersonalRecord;
 use App\Models\QuestReward;
 use App\Models\QuestTemplate;
 use App\Models\User;
@@ -13,7 +16,7 @@ class QuestGenerationService
 {
     public function generateDailyQuests(User $user, $date = null): array
     {
-        $date = $date ? Carbon::parse($date)->toDateString() : now()->toDateString();
+        $date = $date ? Carbon::parse($date)->toDateString() : now($user->timezone())->toDateString();
 
         $dailyTemplates = QuestTemplate::where('quest_type', 'Daily')
             ->where('is_active', true)
@@ -31,7 +34,7 @@ class QuestGenerationService
                     ],
                     [
                         'status' => 'Active',
-                        'expires_at' => now()->addDay()->toDateString(),
+                        'expires_at' => $date,
                     ]
                 );
 
@@ -49,7 +52,7 @@ class QuestGenerationService
 
     public function generateWeeklyQuests(User $user, $date = null): array
     {
-        $date = $date ? Carbon::parse($date) : now();
+        $date = $date ? Carbon::parse($date) : now($user->timezone());
         $startOfWeek = $date->startOfWeek()->toDateString();
 
         $weeklyTemplates = QuestTemplate::where('quest_type', 'Weekly')
@@ -87,6 +90,12 @@ class QuestGenerationService
     public function completeQuest(UserQuest $userQuest, ExperienceService $experienceService, HunterProgressionService $progressionService): bool
     {
         return DB::transaction(function () use ($userQuest, $experienceService, $progressionService) {
+            $userQuest = UserQuest::query()->lockForUpdate()->findOrFail($userQuest->id);
+
+            if ($userQuest->status === 'Completed') {
+                return true;
+            }
+
             $userQuest->update([
                 'status' => 'Completed',
                 'completed_at' => now(),
@@ -101,7 +110,10 @@ class QuestGenerationService
 
             if ($template->stat_reward) {
                 foreach ($template->stat_reward as $stat => $amount) {
-                    $progressionService->applyStatChange($profile, $stat, $amount, 'QuestCompletion', $userQuest);
+                    $statType = StatType::tryFrom($stat);
+                    if ($statType) {
+                        $progressionService->applyStatChange($profile, $statType, (int) $amount, StatChangeReason::QuestReward, $userQuest);
+                    }
                 }
             }
 
@@ -124,6 +136,8 @@ class QuestGenerationService
     {
         $userQuests = $user->userQuests()
             ->where('status', 'Active')
+            ->whereDate('assigned_date', '<=', now($user->timezone())->toDateString())
+            ->whereDate('expires_at', '>=', now($user->timezone())->toDateString())
             ->whereHas('questTemplate', fn ($q) => $q->where('category', $category))
             ->with('progress')
             ->get();
@@ -135,6 +149,31 @@ class QuestGenerationService
                     'current_value' => $newValue,
                     'last_updated_at' => now(),
                 ]);
+            }
+        }
+    }
+
+    public function synchronizeProgress(User $user): void
+    {
+        $today = now($user->timezone())->toDateString();
+        $user->userQuests()->where('status', 'Active')->whereDate('expires_at', '<', $today)->update(['status' => 'Expired']);
+
+        $quests = $user->userQuests()->where('status', 'Active')->whereDate('assigned_date', '<=', $today)
+            ->with('questTemplate')->get();
+
+        foreach ($quests as $quest) {
+            $start = Carbon::parse($quest->assigned_date->toDateString(), $user->timezone())->startOfDay()->utc();
+            $end = Carbon::parse(($quest->expires_at ?? now())->toDateString(), $user->timezone())->endOfDay()->utc();
+            $metric = strtolower(str_replace('_', '', $quest->questTemplate->target_metric));
+            $value = match ($metric) {
+                'workoutscompleted' => $user->workouts()->where('status', 'completed')->whereBetween('completed_at', [$start, $end])->count(),
+                'measurementslogged' => $user->healthMeasurements()->whereBetween('measured_at', [$quest->assigned_date->toDateString(), ($quest->expires_at ?? now())->toDateString()])->distinct()->count('measured_at'),
+                'personalrecords' => PersonalRecord::query()->where('user_id', $user->id)->whereBetween('achieved_at', [$start, $end])->count(),
+                default => null,
+            };
+
+            if ($value !== null) {
+                $quest->progress()->updateOrCreate([], ['current_value' => $value, 'last_updated_at' => now()]);
             }
         }
     }

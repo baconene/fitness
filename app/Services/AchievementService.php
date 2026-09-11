@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Achievement;
 use App\Models\User;
 use App\Models\UserAchievement;
+use Illuminate\Support\Facades\DB;
 
 class AchievementService
 {
@@ -15,10 +16,25 @@ class AchievementService
 
         foreach ($achievements as $achievement) {
             if ($this->checkCriteria($user, $achievement)) {
-                $ua = UserAchievement::firstOrCreate(
-                    ['user_id' => $user->id, 'achievement_id' => $achievement->id],
-                    ['unlocked_at' => now()]
-                );
+                $ua = DB::transaction(function () use ($user, $achievement) {
+                    $profile = $user->hunterProfile()->lockForUpdate()->first();
+                    $userAchievement = UserAchievement::firstOrCreate(
+                        ['user_id' => $user->id, 'achievement_id' => $achievement->id],
+                        ['unlocked_at' => now()]
+                    );
+
+                    if ($profile && $achievement->xp_reward > 0) {
+                        app(ExperienceService::class)->awardXp(
+                            $profile,
+                            $achievement->xp_reward,
+                            'Achievement',
+                            $achievement,
+                            "achievement:{$user->id}:{$achievement->id}:xp",
+                        );
+                    }
+
+                    return $userAchievement;
+                });
 
                 if ($ua->wasRecentlyCreated) {
                     $unlocked[] = $achievement;

@@ -17,6 +17,15 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    public function timezone(): string
+    {
+        $timezone = data_get($this->onboardingProgress?->step_data, 'Account.timezone');
+
+        return is_string($timezone) && in_array($timezone, \DateTimeZone::listIdentifiers(), true)
+            ? $timezone
+            : config('app.timezone', 'UTC');
+    }
+
     public function hunterProfile()
     {
         return $this->hasOne(HunterProfile::class);

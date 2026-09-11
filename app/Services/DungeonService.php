@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Dungeon;
 use App\Models\DungeonRun;
+use App\Models\ExperienceTransaction;
+use App\Models\Item;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -14,6 +16,12 @@ class DungeonService
     public function startRun(User $user, Dungeon $dungeon): DungeonRun
     {
         return DB::transaction(function () use ($user, $dungeon) {
+            $user->hunterProfile()->lockForUpdate()->first();
+            $activeRun = $this->getUserActiveRun($user);
+            if ($activeRun) {
+                return $activeRun;
+            }
+
             $run = DungeonRun::create([
                 'user_id' => $user->id,
                 'dungeon_id' => $dungeon->id,
@@ -46,6 +54,12 @@ class DungeonService
     public function completeFloor(DungeonRun $run, int $damage, string $idempotencyKey): DungeonRun
     {
         return DB::transaction(function () use ($run, $idempotencyKey) {
+            $run = DungeonRun::whereKey($run->id)->lockForUpdate()->firstOrFail();
+            $xpKey = "dungeon:{$run->id}:{$idempotencyKey}:xp";
+            if ($run->status !== 'Active' || ExperienceTransaction::where('idempotency_key', $xpKey)->exists()) {
+                return $run;
+            }
+
             $floor = $run->dungeon->floors()->where('floor_number', $run->current_floor)->first();
 
             if (! $floor) {
@@ -53,7 +67,6 @@ class DungeonService
             }
 
             // Award XP for floor completion
-            $xpKey = "{$idempotencyKey}:xp";
             $this->experienceService->awardXp(
                 $run->user->hunterProfile,
                 $floor->xp_reward,
@@ -68,9 +81,13 @@ class DungeonService
             if ($floor->loot_table) {
                 $looted = $this->rollLoot($floor->loot_table);
                 if ($looted) {
-                    $currentLoot = $run->items_looted ?? [];
-                    $currentLoot[] = $looted;
-                    $run->update(['items_looted' => $currentLoot]);
+                    $item = Item::whereKey($looted)->where('is_active', true)->first();
+                    if ($item) {
+                        app(InventoryService::class)->addItem($run->user, $item);
+                        $currentLoot = $run->items_looted ?? [];
+                        $currentLoot[] = $item->id;
+                        $run->update(['items_looted' => $currentLoot]);
+                    }
                 }
             }
 
@@ -96,8 +113,13 @@ class DungeonService
     public function abandonRun(DungeonRun $run): DungeonRun
     {
         return DB::transaction(function () use ($run) {
+            $run = DungeonRun::whereKey($run->id)->lockForUpdate()->firstOrFail();
+            if ($run->status !== 'Active') {
+                return $run;
+            }
+
             $run->update([
-                'status' => 'Abandoned',
+                'status' => 'Failed',
                 'ended_at' => now(),
             ]);
 
@@ -121,7 +143,7 @@ class DungeonService
             ->get();
     }
 
-    private function rollLoot(array $lootTable): ?string
+    private function rollLoot(array $lootTable): ?int
     {
         if (empty($lootTable)) {
             return null;
@@ -133,7 +155,7 @@ class DungeonService
         foreach ($lootTable as $item) {
             $cumulative += $item['chance'] ?? 0;
             if ($random <= $cumulative) {
-                return $item['item_id'] ?? null;
+                return isset($item['item_id']) ? (int) $item['item_id'] : null;
             }
         }
 

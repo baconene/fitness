@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Item;
 use App\Models\User;
 use App\Models\UserInventory;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class InventoryService
@@ -44,7 +45,7 @@ class InventoryService
         });
     }
 
-    public function getInventory(User $user)
+    public function getInventory(User $user): Collection
     {
         return UserInventory::where('user_id', $user->id)
             ->with('item')
@@ -54,7 +55,7 @@ class InventoryService
     public function equipItem(User $user, Item $item): bool
     {
         return DB::transaction(function () use ($user, $item) {
-            if (! $item->is_equippable) {
+            if (! $item->is_equippable || ! $item->is_active || ! $item->equip_slot) {
                 return false;
             }
 
@@ -62,18 +63,39 @@ class InventoryService
                 ->where('item_id', $item->id)
                 ->first();
 
-            if (! $inventory) {
+            if (! $inventory || $inventory->quantity < 1) {
                 return false;
             }
 
-            // Unequip any item currently in this slot
-            $hunterProfile = $user->hunterProfile;
+            $hunterProfile = $user->hunterProfile()->lockForUpdate()->first();
             if (! $hunterProfile) {
                 return false;
             }
 
-            // Mark this item as equipped by storing in a simple mapping
-            // (Phase 2: store in equipped_items or similar; for now keep it simple)
+            $meta = $hunterProfile->avatar_meta?->getArrayCopy() ?? [];
+            $meta['equipped_items'][$item->equip_slot] = $item->id;
+            $hunterProfile->update(['avatar_meta' => $meta]);
+
+            return true;
+        });
+    }
+
+    public function unequipItem(User $user, Item $item): bool
+    {
+        return DB::transaction(function () use ($user, $item) {
+            $profile = $user->hunterProfile()->lockForUpdate()->first();
+            if (! $profile) {
+                return false;
+            }
+
+            $meta = $profile->avatar_meta?->getArrayCopy() ?? [];
+            if ((int) ($meta['equipped_items'][$item->equip_slot] ?? 0) !== $item->id) {
+                return false;
+            }
+
+            unset($meta['equipped_items'][$item->equip_slot]);
+            $profile->update(['avatar_meta' => $meta]);
+
             return true;
         });
     }
