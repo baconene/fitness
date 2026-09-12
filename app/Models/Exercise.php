@@ -8,6 +8,7 @@ use Database\Factories\ExerciseFactory;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Exercise extends Model
 {
@@ -42,5 +43,10 @@ class Exercise extends Model
             'contraindications' => AsArrayObject::class,
             'is_active' => 'boolean',
         ];
+    }
+
+    public function exerciseCategory(): BelongsTo
+    {
+        return $this->belongsTo(ExerciseCategory::class);
     }
 }

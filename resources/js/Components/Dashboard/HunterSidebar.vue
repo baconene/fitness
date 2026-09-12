@@ -9,7 +9,7 @@ const page = usePage();
 const groups = [
     { label: 'COMMAND', items: [
         ['System home', 'dashboard', 'dashboard'], ['Missions', 'scroll', 'missions.index'],
-        ['Workouts', 'dumbbell', 'workouts.index'], ['Calendar', 'calendar', 'calendar.show'], ['Programs', 'clipboard', 'programs.index'],
+        ['Workouts', 'dumbbell', 'workouts.index'], ['Exercises', 'library', 'exercises.index'], ['Calendar', 'calendar', 'calendar.show'], ['Programs', 'clipboard', 'programs.index'],
     ] },
     { label: 'YOUR HUNTER', items: [
         ['Hunter profile', 'body', 'hunter.show'], ['Health', 'heart', 'health.index'], ['Progress', 'chart', 'progress.index'],

@@ -38,6 +38,7 @@ class IntegrationFitnessPagesTest extends TestCase
         return [
             'missions' => ['missions.index', 'Missions/Index'],
             'calendar' => ['calendar.show', 'Calendar/Index'],
+            'exercises' => ['exercises.index', 'Exercises/Index'],
             'programs' => ['programs.index', 'Programs/Index'],
             'hunter' => ['hunter.show', 'Hunter/Show'],
             'inventory' => ['inventory.index', 'Inventory/Index'],

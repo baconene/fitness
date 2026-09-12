@@ -27,6 +27,8 @@ const paths = {
     castle: '<path d="M4 21V9l2-1 2 1V6l2-1 2 1V4l2-1 2 1v2l2-1 2 1v12"/><path d="M3 21h18M10 21v-5h4v5"/>',
     chart: '<path d="M4 4v16h16"/><path d="M8 15l3-4 3 3 4-6"/>',
     heart: '<path d="M12 20.5 4.2 12.9a4.7 4.7 0 0 1 0-6.7 4.7 4.7 0 0 1 6.7 0l1.1 1.1 1.1-1.1a4.7 4.7 0 0 1 6.7 0 4.7 4.7 0 0 1 0 6.7z"/>',
+    library:
+        '<rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="15" width="7" height="5" rx="1.5"/><rect x="14" y="15" width="7" height="5" rx="1.5"/>',
     briefcase:
         '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 12h18"/>',
     trophy: '<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 5H5v2a3 3 0 0 0 3 3M16 5h3v2a3 3 0 0 1-3 3"/><path d="M10 13v3h4v-3M8 20h8M12 16v4"/>',

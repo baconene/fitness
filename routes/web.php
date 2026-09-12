@@ -3,6 +3,7 @@
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\Calendar\CalendarController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExerciseController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\HunterSystemController;
 use App\Http\Controllers\MissionsController;
@@ -46,6 +47,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/workouts/{workout}/live', [LiveWorkoutController::class, 'show'])->name('workouts.live.show');
     Route::post('/workouts/{workout}/sets/{set}/complete', [LiveWorkoutController::class, 'completeSet'])->name('workouts.sets.complete');
     Route::post('/workouts/{workout}/complete', [LiveWorkoutController::class, 'complete'])->name('workouts.complete');
+
+    // Exercise library
+    Route::get('/exercises', [ExerciseController::class, 'index'])->name('exercises.index');
 
     // Training programs
     Route::get('/programs', [ProgramController::class, 'index'])->name('programs.index');
