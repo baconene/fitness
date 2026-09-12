@@ -14,8 +14,8 @@ test('an unknown slug yields no demonstration rather than an unrelated movement'
 
 test('bench press resolves the same local GIF for seeded and legacy slugs', () => {
     const bench = demoFor('bench-press');
-    assert.equal(bench.gif, '/images/exercises/bench-press.gif');
-    assert.equal(bench.poster, '/images/exercises/bench-press.png');
+    assert.equal(new URL(bench.gif, 'http://localhost').pathname, '/images/exercises/bench-press.gif');
+    assert.equal(new URL(bench.poster, 'http://localhost').pathname, '/images/exercises/bench-press.png');
     assert.match(bench.label, /bench press/i);
     assert.deepEqual(demoFor('bench_press'), bench);
     assert.deepEqual(demoFor('Bench Press'), bench);
@@ -25,6 +25,10 @@ test('bench press resolves the same local GIF for seeded and legacy slugs', () =
 test('every seeded demo ships an animated GIF and matching PNG poster', () => {
     for (const slug of Object.keys(EXERCISE_DEMOS)) {
         const demo = demoFor(slug);
+        const gifVersion = new URL(demo.gif, 'http://localhost').searchParams.get('v');
+        const posterVersion = new URL(demo.poster, 'http://localhost').searchParams.get('v');
+        assert.ok(gifVersion, `${slug} must bypass the old unversioned GIF cache`);
+        assert.equal(posterVersion, gifVersion, `${slug} must use the same artwork revision when paused`);
         const gif = readFileSync(new URL(`../../public${demo.gif}`, import.meta.url));
         const poster = readFileSync(new URL(`../../public${demo.poster}`, import.meta.url));
         assert.equal(gif.subarray(0, 6).toString(), 'GIF89a');

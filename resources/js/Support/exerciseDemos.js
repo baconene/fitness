@@ -92,11 +92,13 @@ export const EXERCISE_DEMOS = {
 /** The demonstration for a slug, or null when none is authored. */
 export const demoFor = (slug) => {
     const key = typeof slug === 'string' ? slug.toLowerCase().trim().replaceAll('_', '-').replaceAll(' ', '-') : '';
+    // Bump when replacing public assets so returning browsers fetch the new artwork.
+    const artworkVersion = '3d-1';
 
     return Object.hasOwn(EXERCISE_DEMOS, key) ? {
         ...EXERCISE_DEMOS[key],
         slug: key,
-        gif: `/images/exercises/${key}.gif`,
-        poster: `/images/exercises/${key}.png`,
+        gif: `/images/exercises/${key}.gif?v=${artworkVersion}`,
+        poster: `/images/exercises/${key}.png?v=${artworkVersion}`,
     } : null;
 };
