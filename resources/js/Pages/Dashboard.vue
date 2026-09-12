@@ -91,8 +91,12 @@ onMounted(() => {
                             :fat-percent="health.fatPercent"
                         />
                         <WaterCard
-                            :consumed-litres="health.waterConsumed"
-                            :target-litres="health.waterTarget"
+                            :consumed-ml="health.water.consumedMl"
+                            :consumed-litres="health.water.consumedLitres"
+                            :target-ml="health.water.targetMl"
+                            :target-litres="health.water.targetLitres"
+                            :percent="health.water.percent"
+                            :logs="health.water.logs"
                         />
                     </div>
 
@@ -185,6 +189,8 @@ onMounted(() => {
                             );
                         "
                     />
+                    <div class="sys-scanlines" />
+                    <div class="sys-vignette" />
                     <div class="relative px-6 py-8 text-center">
                         <p
                             class="sys-display text-[15px] text-content/95 sm:text-[17px]"

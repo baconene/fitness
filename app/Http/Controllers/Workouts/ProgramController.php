@@ -3,13 +3,19 @@
 namespace App\Http\Controllers\Workouts;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreTrainingProgramRequest;
+use App\Http\Requests\UpdateTrainingProgramRequest;
+use App\Models\Exercise;
 use App\Models\TrainingProgram;
 use App\Models\UserProgramEnrollment;
+use App\Services\ProgramBuilderService;
 use App\Services\WorkoutService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,12 +23,77 @@ class ProgramController extends Controller
 {
     public function index(Request $request): Response
     {
+        $programs = TrainingProgram::where(fn ($query) => $query->where('is_system_program', true)->orWhere('created_by_user_id', $request->user()->id))
+            ->with('programWeeks.programDays.programExercises.exercise')->orderBy('difficulty')->get();
+
         return Inertia::render('Programs/Index', [
-            'programs' => TrainingProgram::where(fn ($query) => $query->where('is_system_program', true)->orWhere('created_by_user_id', $request->user()->id))
-                ->with('programWeeks.programDays.programExercises.exercise')->orderBy('difficulty')->get(),
+            'programs' => $programs->map(fn (TrainingProgram $program) => array_merge($program->toArray(), [
+                'can_edit' => $request->user()->can('update', $program),
+                'can_delete' => $request->user()->can('delete', $program),
+            ])),
             'enrollments' => UserProgramEnrollment::where('user_id', $request->user()->id)->get(),
             'today' => now($request->user()->timezone())->toDateString(),
         ]);
+    }
+
+    public function create(Request $request): Response
+    {
+        Gate::authorize('create', TrainingProgram::class);
+
+        return Inertia::render('Programs/Edit', [
+            'program' => null,
+            'exercises' => $this->exerciseOptions(),
+        ]);
+    }
+
+    public function store(StoreTrainingProgramRequest $request, ProgramBuilderService $builder): RedirectResponse
+    {
+        $program = $builder->create($request->user(), $request->validated());
+
+        return to_route('programs.index')->with('success', "\"{$program->name}\" is ready. Enroll when you want the missions scheduled.");
+    }
+
+    public function edit(Request $request, TrainingProgram $program): Response
+    {
+        Gate::authorize('update', $program);
+        $program->load('programWeeks.programDays.programExercises');
+
+        return Inertia::render('Programs/Edit', [
+            'program' => $program,
+            'exercises' => $this->exerciseOptions(),
+        ]);
+    }
+
+    public function update(UpdateTrainingProgramRequest $request, TrainingProgram $program, ProgramBuilderService $builder): RedirectResponse
+    {
+        $builder->update($program, $request->validated());
+
+        return to_route('programs.index')->with('success', "\"{$program->name}\" has been updated.");
+    }
+
+    public function duplicate(Request $request, TrainingProgram $program, ProgramBuilderService $builder): RedirectResponse
+    {
+        Gate::authorize('duplicate', $program);
+        $copy = $builder->duplicate($request->user(), $program);
+
+        return to_route('programs.edit', $copy)->with('success', 'Copied. This version is yours to edit.');
+    }
+
+    public function destroy(Request $request, TrainingProgram $program): RedirectResponse
+    {
+        Gate::authorize('delete', $program);
+        $program->delete();
+
+        return to_route('programs.index')->with('success', 'Program deleted.');
+    }
+
+    /**
+     * @return Collection<int, Exercise>
+     */
+    private function exerciseOptions()
+    {
+        return Exercise::where('is_active', true)->orderBy('name')
+            ->get(['id', 'name', 'exercise_type', 'primary_muscle', 'equipment_required', 'difficulty']);
     }
 
     public function enroll(Request $request, TrainingProgram $program, WorkoutService $workoutService): RedirectResponse

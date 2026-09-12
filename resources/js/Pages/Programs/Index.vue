@@ -1,6 +1,6 @@
 <script setup>
 import { computed, reactive } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import HunterLayout from '@/Layouts/HunterLayout.vue';
 import Icon from '@/Components/Icon.vue';
 
@@ -45,10 +45,29 @@ const enroll = (program) => {
         }
     );
 };
+
+const duplicate = (program) => {
+    router.post(route('programs.duplicate', program.id), {}, { preserveScroll: true });
+};
+
+const destroy = (program) => {
+    if (window.confirm(`Delete "${program.name}"? This cannot be undone.`)) {
+        router.delete(route('programs.destroy', program.id), { preserveScroll: true });
+    }
+};
 </script>
 
 <template>
     <HunterLayout title="Programs" subtitle="Structured plans that schedule your missions for you.">
+        <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <p class="text-[13px] text-muted">
+                Build your own plan, or copy a system program and make it yours.
+            </p>
+            <Link :href="route('programs.create')" class="sys-pill sys-pill-active min-h-10">
+                + Build a program
+            </Link>
+        </div>
+
         <ul v-if="programs.length" class="grid gap-4 lg:grid-cols-2">
             <li
                 v-for="program in programs"
@@ -75,6 +94,30 @@ const enroll = (program) => {
                 <p class="mt-3 text-[12px] text-muted">
                     {{ trainingDays(program) }} training days will be scheduled.
                 </p>
+
+                <div class="mt-3 flex flex-wrap items-center gap-2">
+                    <Link
+                        v-if="program.can_edit"
+                        :href="route('programs.edit', program.id)"
+                        class="sys-pill min-h-9 hover:border-brand/50"
+                    >
+                        Edit plan
+                    </Link>
+                    <button type="button" class="sys-pill min-h-9 hover:border-brand/50" @click="duplicate(program)">
+                        Copy &amp; edit
+                    </button>
+                    <button
+                        v-if="program.can_delete"
+                        type="button"
+                        class="sys-pill min-h-9 hover:border-danger/50 hover:text-danger"
+                        @click="destroy(program)"
+                    >
+                        Delete
+                    </button>
+                    <span v-if="!program.can_edit && enrolledIds.has(program.id)" class="text-[11px] text-muted">
+                        Locked while enrolled — copy it to make changes.
+                    </span>
+                </div>
 
                 <div class="sys-divider mt-4 pt-4">
                     <div v-if="enrolledIds.has(program.id)" class="flex items-center justify-between">

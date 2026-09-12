@@ -20,6 +20,14 @@
         --color-on-brand: 5 9 20;
         --color-danger: 255 118 118;
         --color-success: 74 222 168;
+
+        /* Hunter rank identity — steel, teal, blue, violet, amber, crimson. */
+        --color-rank-e: 142 156 180;
+        --color-rank-d: 74 222 168;
+        --color-rank-c: 54 163 255;
+        --color-rank-b: 161 140 255;
+        --color-rank-a: 255 178 84;
+        --color-rank-s: 255 96 112;
         --font-display: 'Cinzel', 'Georgia', serif;
         --font-ui: 'Inter', system-ui, sans-serif;
         --radius-control: 0.375rem;
@@ -217,6 +225,20 @@
     .sys-panel {
         position: relative;
         background:
+            /* Holographic scanlines — the "system window" texture. */
+            repeating-linear-gradient(
+                0deg,
+                rgba(120, 160, 255, 0.028) 0px,
+                rgba(120, 160, 255, 0.028) 1px,
+                transparent 1px,
+                transparent 5px
+            ),
+            /* Cool light leak from the top-left, as if projected. */
+            radial-gradient(
+                120% 80% at 0% 0%,
+                rgba(54, 163, 255, 0.07) 0%,
+                transparent 60%
+            ),
             linear-gradient(
                 160deg,
                 rgba(16, 25, 44, 0.92) 0%,
@@ -402,6 +424,180 @@
     /* Row separator used in list panels. */
     .sys-divider {
         border-top: 1px solid rgb(var(--color-edge) / 0.14);
+    }
+
+    /* ---- Rank identity ---- */
+
+    /*
+     * Every rank-aware element reads --rank-rgb, so a single variable on a
+     * wrapper recolours the sigil, its glow and any accent inside it.
+     */
+    .sys-rank-e {
+        --rank-rgb: var(--color-rank-e);
+    }
+    .sys-rank-d {
+        --rank-rgb: var(--color-rank-d);
+    }
+    .sys-rank-c {
+        --rank-rgb: var(--color-rank-c);
+    }
+    .sys-rank-b {
+        --rank-rgb: var(--color-rank-b);
+    }
+    .sys-rank-a {
+        --rank-rgb: var(--color-rank-a);
+    }
+    .sys-rank-s {
+        --rank-rgb: var(--color-rank-s);
+    }
+
+    /* Rotated-square sigil holding the rank letter. */
+    .sys-sigil {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 3.25rem;
+        height: 3.25rem;
+        flex: none;
+        transform: rotate(45deg);
+        border: 1px solid rgb(var(--rank-rgb, var(--color-brand)) / 0.7);
+        border-radius: 0.375rem;
+        background: linear-gradient(
+            145deg,
+            rgb(var(--rank-rgb, var(--color-brand)) / 0.22) 0%,
+            rgba(8, 13, 26, 0.9) 70%
+        );
+        box-shadow:
+            0 0 18px -2px rgb(var(--rank-rgb, var(--color-brand)) / 0.55),
+            inset 0 0 12px rgb(var(--rank-rgb, var(--color-brand)) / 0.15);
+    }
+    .sys-sigil > * {
+        transform: rotate(-45deg);
+    }
+
+    .sys-rank-text {
+        color: rgb(var(--rank-rgb, var(--color-brand)));
+    }
+
+    /* Rank-tinted pill, for "E-RANK HUNTER" style chips. */
+    .sys-pill-rank {
+        border-color: rgb(var(--rank-rgb, var(--color-brand)) / 0.55);
+        background: rgb(var(--rank-rgb, var(--color-brand)) / 0.12);
+        color: rgb(var(--rank-rgb, var(--color-brand)));
+    }
+
+    /* ---- Status-window extras ---- */
+
+    /*
+     * Segmented attribute bar. The fill is clipped by a repeating mask so it
+     * reads as discrete notches, the way a status window does.
+     */
+    .sys-seg {
+        height: 0.5rem;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.05);
+        overflow: hidden;
+        -webkit-mask-image: repeating-linear-gradient(
+            90deg,
+            #000 0px,
+            #000 6px,
+            transparent 6px,
+            transparent 8px
+        );
+        mask-image: repeating-linear-gradient(
+            90deg,
+            #000 0px,
+            #000 6px,
+            transparent 6px,
+            transparent 8px
+        );
+    }
+    .sys-seg-fill {
+        height: 100%;
+        background: linear-gradient(
+            90deg,
+            rgb(var(--color-brand)),
+            rgb(var(--color-violet-light))
+        );
+        box-shadow: 0 0 10px rgb(var(--color-brand) / 0.6);
+        transition: width 600ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Header strip for a card, with a leading accent bar. */
+    .sys-window-head {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.875rem 1.25rem;
+        border-bottom: 1px solid rgb(var(--color-edge) / 0.15);
+        background: linear-gradient(
+            90deg,
+            rgb(var(--color-brand) / 0.09) 0%,
+            transparent 55%
+        );
+    }
+    .sys-window-head::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        width: 2px;
+        height: 1.25rem;
+        background: rgb(var(--color-brand));
+        box-shadow: 0 0 10px rgb(var(--color-brand) / 0.9);
+    }
+
+    /*
+     * CRT scanline overlay for photographic panels, so stock imagery reads as
+     * something the System is projecting rather than a pasted-in photo.
+     * Used as its own absolutely-positioned div, because .sys-corners already
+     * claims ::before/::after on the panels this sits inside.
+     */
+    .sys-scanlines {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: repeating-linear-gradient(
+            0deg,
+            rgba(3, 6, 14, 0.42) 0px,
+            rgba(3, 6, 14, 0.42) 1px,
+            transparent 1px,
+            transparent 3px
+        );
+    }
+
+    /* Inner vignette that pins photo edges back into the panel. */
+    .sys-vignette {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        box-shadow: inset 0 0 70px 12px rgba(3, 6, 14, 0.95);
+    }
+
+    /* Slow breathing glow for live/active elements. */
+    .sys-pulse {
+        animation: sys-pulse 2.6s ease-in-out infinite;
+    }
+    @keyframes sys-pulse {
+        0%,
+        100% {
+            opacity: 1;
+            box-shadow: 0 0 0 0 rgb(var(--color-brand) / 0.5);
+        }
+        50% {
+            opacity: 0.85;
+            box-shadow: 0 0 14px 3px rgb(var(--color-brand) / 0);
+        }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .sys-pulse {
+            animation: none;
+        }
+        .sys-fill,
+        .sys-seg-fill {
+            transition: none;
+        }
     }
     .auth-form {
         margin-top: 2rem;

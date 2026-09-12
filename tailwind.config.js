@@ -7,6 +7,7 @@ export default {
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
         './resources/js/**/*.vue',
+        './resources/js/**/*.js',
     ],
 
     theme: {
@@ -27,7 +28,19 @@ export default {
                 edge: 'rgb(var(--color-edge) / <alpha-value>)',
                 content: 'rgb(var(--color-content) / <alpha-value>)',
                 muted: 'rgb(var(--color-muted) / <alpha-value>)',
-                brand: 'rgb(var(--color-brand) / <alpha-value>)',
+                brand: {
+                    DEFAULT: 'rgb(var(--color-brand) / <alpha-value>)',
+                    hover: 'rgb(var(--color-brand-hover) / <alpha-value>)',
+                },
+                /** Hunter rank identity, E (steel) through S (crimson). */
+                rank: {
+                    e: 'rgb(var(--color-rank-e) / <alpha-value>)',
+                    d: 'rgb(var(--color-rank-d) / <alpha-value>)',
+                    c: 'rgb(var(--color-rank-c) / <alpha-value>)',
+                    b: 'rgb(var(--color-rank-b) / <alpha-value>)',
+                    a: 'rgb(var(--color-rank-a) / <alpha-value>)',
+                    s: 'rgb(var(--color-rank-s) / <alpha-value>)',
+                },
                 violet: {
                     DEFAULT: 'rgb(var(--color-violet) / <alpha-value>)',
                     light: 'rgb(var(--color-violet-light) / <alpha-value>)',

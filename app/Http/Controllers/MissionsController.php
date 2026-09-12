@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Exercise;
+use App\Models\User;
 use App\Models\UserQuest;
+use App\Models\Workout;
 use App\Services\ExperienceService;
 use App\Services\HunterProgressionService;
 use App\Services\QuestGenerationService;
@@ -49,7 +52,44 @@ class MissionsController extends Controller
             }),
             'today' => now($user->timezone())->toDateString(),
             'completedCount' => $user->userQuests()->where('status', 'Completed')->count(),
+            'upcomingWorkouts' => $this->upcomingWorkouts($user),
+            'exerciseOptions' => Exercise::where('is_active', true)->orderBy('name')
+                ->get(['id', 'name', 'exercise_type', 'primary_muscle']),
         ]);
+    }
+
+    /**
+     * The next few scheduled sessions, so a hunter can see what a mission actually
+     * involves (and adjust the plan behind it) before starting.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function upcomingWorkouts(User $user): array
+    {
+        return $user->workouts()
+            ->whereIn('status', ['planned', 'in_progress'])
+            ->with(['workoutExercises.exercise', 'workoutExercises.workoutSets', 'trainingProgram'])
+            ->orderByRaw("CASE WHEN status = 'in_progress' THEN 0 ELSE 1 END")
+            ->orderBy('scheduled_date')
+            ->limit(3)
+            ->get()
+            ->map(fn (Workout $workout): array => [
+                'id' => $workout->id,
+                'name' => $workout->name,
+                'status' => $workout->status,
+                'scheduledDate' => $workout->scheduled_date?->toDateString(),
+                'programId' => $workout->training_program_id,
+                'programName' => $workout->trainingProgram?->name,
+                'setCount' => $workout->workoutExercises->sum(fn ($exercise) => $exercise->workoutSets->count()),
+                'exercises' => $workout->workoutExercises->map(fn ($exercise): array => [
+                    'id' => $exercise->id,
+                    'exerciseId' => $exercise->exercise_id,
+                    'name' => $exercise->exercise->name,
+                    'sets' => $exercise->workoutSets->count(),
+                    'completedSets' => $exercise->workoutSets->where('is_completed', true)->count(),
+                ])->all(),
+            ])
+            ->all();
     }
 
     public function claim(Request $request, UserQuest $quest, ExperienceService $experience, HunterProgressionService $progression): RedirectResponse

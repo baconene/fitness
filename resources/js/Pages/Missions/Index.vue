@@ -1,15 +1,34 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import HunterLayout from '@/Layouts/HunterLayout.vue';
 import Icon from '@/Components/Icon.vue';
 import Pagination from '@/Components/Pagination.vue';
+import WorkoutPlanEditor from '@/Components/LiveWorkout/WorkoutPlanEditor.vue';
 
 const props = defineProps({
     quests: { type: Object, required: true },
     today: { type: String, required: true },
     completedCount: { type: Number, default: 0 },
+    upcomingWorkouts: { type: Array, default: () => [] },
+    exerciseOptions: { type: Array, default: () => [] },
 });
+
+const expandedWorkoutId = ref(null);
+
+const toggleWorkout = (workout) => {
+    expandedWorkoutId.value = expandedWorkoutId.value === workout.id ? null : workout.id;
+};
+
+const startWorkout = (workout) => {
+    if (workout.status === 'in_progress') {
+        router.visit(route('workouts.live.show', workout.id));
+
+        return;
+    }
+
+    router.post(route('workouts.start', workout.id));
+};
 
 const percent = (quest) =>
     quest.target ? Math.min(100, Math.round((quest.current / quest.target) * 100)) : 0;
@@ -55,6 +74,59 @@ const claim = (quest) => {
                 </div>
             </div>
         </div>
+
+        <section class="sys-panel mb-6 p-5">
+            <header class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-[15px] font-medium text-content">Next sessions</h2>
+                    <p class="mt-1 text-[12px] text-muted">Check what a mission involves before you start it.</p>
+                </div>
+                <Link :href="route('programs.index')" class="sys-pill min-h-9 hover:border-brand/50">
+                    <Icon name="clipboard" :size="12" /> Manage programs
+                </Link>
+            </header>
+
+            <ul v-if="upcomingWorkouts.length" class="flex flex-col gap-2">
+                <li v-for="workout in upcomingWorkouts" :key="workout.id" class="rounded-md border border-edge/15 p-4">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-[14px] font-medium text-content">{{ workout.name }}</p>
+                            <p class="mt-1 text-[12px] text-muted">
+                                <span v-if="workout.scheduledDate">{{ workout.scheduledDate }}</span>
+                                <span v-if="workout.programName"> · {{ workout.programName }}</span>
+                                <span> · {{ workout.exercises.length }} exercises · {{ workout.setCount }} sets</span>
+                            </p>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span v-if="workout.status === 'in_progress'" class="sys-pill sys-pill-active">In progress</span>
+                            <button type="button" class="sys-pill min-h-9 hover:border-brand/50" @click="toggleWorkout(workout)">
+                                {{ expandedWorkoutId === workout.id ? 'Hide' : 'View' }} exercises
+                            </button>
+                            <button type="button" class="sys-pill sys-pill-active min-h-9" @click="startWorkout(workout)">
+                                {{ workout.status === 'in_progress' ? 'Resume' : 'Start' }}
+                                <Icon name="arrowRight" :size="12" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="expandedWorkoutId === workout.id" class="mt-3 border-t border-edge/10 pt-3">
+                        <p class="mb-2 text-[11px] uppercase tracking-[.14em] text-muted">
+                            Session plan — adjust it before you start
+                        </p>
+                        <WorkoutPlanEditor
+                            :workout-id="workout.id"
+                            :exercises="workout.exercises"
+                            :exercise-options="exerciseOptions"
+                        />
+                    </div>
+                </li>
+            </ul>
+
+            <p v-else class="py-6 text-center text-sm text-muted">
+                Nothing scheduled. Build or enroll in a program to get missions on your calendar.
+            </p>
+        </section>
 
         <ul v-if="quests.data.length" class="grid gap-3 lg:grid-cols-2">
             <li

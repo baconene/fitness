@@ -41,12 +41,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/workouts', [WorkoutController::class, 'store'])->name('workouts.store');
     Route::patch('/workouts/{workout}', [WorkoutController::class, 'update'])->name('workouts.update');
     Route::post('/workouts/{workout}/start', [WorkoutController::class, 'start'])->name('workouts.start');
+    Route::post('/workouts/{workout}/exercises', [WorkoutController::class, 'addExercise'])->name('workouts.exercises.add');
+    Route::delete('/workouts/{workout}/exercises/{workoutExercise}', [WorkoutController::class, 'removeExercise'])->name('workouts.exercises.remove');
     Route::get('/workouts/{workout}/live', [LiveWorkoutController::class, 'show'])->name('workouts.live.show');
     Route::post('/workouts/{workout}/sets/{set}/complete', [LiveWorkoutController::class, 'completeSet'])->name('workouts.sets.complete');
     Route::post('/workouts/{workout}/complete', [LiveWorkoutController::class, 'complete'])->name('workouts.complete');
 
     // Training programs
     Route::get('/programs', [ProgramController::class, 'index'])->name('programs.index');
+    Route::get('/programs/create', [ProgramController::class, 'create'])->name('programs.create');
+    Route::post('/programs', [ProgramController::class, 'store'])->name('programs.store');
+    Route::get('/programs/{program}/edit', [ProgramController::class, 'edit'])->name('programs.edit');
+    Route::patch('/programs/{program}', [ProgramController::class, 'update'])->name('programs.update');
+    Route::delete('/programs/{program}', [ProgramController::class, 'destroy'])->name('programs.destroy');
+    Route::post('/programs/{program}/duplicate', [ProgramController::class, 'duplicate'])->name('programs.duplicate');
     Route::post('/programs/{program}/enroll', [ProgramController::class, 'enroll'])->name('programs.enroll');
 
     // Calendar
@@ -77,6 +85,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Health measurements and goals
     Route::get('/health', [HealthController::class, 'index'])->name('health.index');
     Route::post('/health/measurements', [HealthController::class, 'storeMeasurement'])->name('health.measurements.store');
+    Route::post('/health/water', [HealthController::class, 'storeWaterLog'])->name('health.water.store');
+    Route::delete('/health/water/{waterLog}', [HealthController::class, 'destroyWaterLog'])->name('health.water.destroy');
     Route::post('/health/goals', [HealthController::class, 'storeGoal'])->name('health.goals.store');
     Route::patch('/health/goals/{goal}', [HealthController::class, 'updateGoal'])->name('health.goals.update');
 

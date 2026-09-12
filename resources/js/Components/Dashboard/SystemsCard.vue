@@ -22,7 +22,7 @@ const dungeonProgress = computed(() => {
 </script>
 
 <template>
-    <section class="sys-panel sys-corners p-5">
+    <section class="sys-panel sys-panel-hover sys-corners sys-corners-x p-5">
         <div class="flex items-center gap-2.5">
             <span class="text-brand"><Icon name="castle" :size="18" /></span>
             <h2 class="sys-label">Systems</h2>

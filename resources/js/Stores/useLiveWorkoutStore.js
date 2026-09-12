@@ -34,24 +34,50 @@ export const useLiveWorkoutStore = defineStore('liveWorkout', () => {
         if (!workout.value || !workout.value.workout_exercises) {
             return false;
         }
-        return workout.value.workout_exercises.every((exercise) =>
+        return workout.value.workout_exercises.length > 0 && workout.value.workout_exercises.every((exercise) =>
+            exercise.workout_sets.length > 0 &&
             exercise.workout_sets.every((set) => set.is_completed)
         );
     });
 
     const setWorkout = (data, exerciseIndex = 0) => {
-        workout.value = data;
+        workout.value = JSON.parse(JSON.stringify(data));
         currentExerciseIndex.value = exerciseIndex;
     };
 
-    const markSetCompleted = (setId) => {
+    /**
+     * Flips the set on the loaded workout so `currentSet` and `isWorkoutComplete`
+     * advance. Without this the UI stays pinned to the first set forever.
+     */
+    const markSetCompleted = (setId, serverSet = null) => {
         completedSetIds.value.add(setId);
+
+        if (!workout.value?.workout_exercises) {
+            return;
+        }
+
+        workout.value.workout_exercises.forEach((exercise) => {
+            const match = exercise.workout_sets?.find((set) => set.id === setId);
+
+            if (match) {
+                Object.assign(match, serverSet ?? {}, { is_completed: true });
+            }
+        });
     };
 
+    /** Sets left on the current exercise, ignoring the one just logged. */
+    const remainingSetsOnCurrentExercise = computed(
+        () => currentExercise.value?.workout_sets?.filter((set) => !set.is_completed).length ?? 0,
+    );
+
+    /** Rest length the server configured for this exercise, falling back to a sane default. */
+    const currentRestSeconds = computed(() => Number(currentExercise.value?.rest_seconds) || 60);
+
     const moveToNextExercise = () => {
-        if (!isLastExercise.value) {
-            currentExerciseIndex.value++;
-        }
+        const entries = workout.value?.workout_exercises ?? [];
+        const next = entries.findIndex((entry, index) => index > currentExerciseIndex.value && entry.workout_sets?.some((set) => !set.is_completed));
+        const remaining = next >= 0 ? next : entries.findIndex((entry) => entry.workout_sets?.some((set) => !set.is_completed));
+        if (remaining >= 0) currentExerciseIndex.value = remaining;
     };
 
     const startRest = (durationSeconds) => {
@@ -88,6 +114,8 @@ export const useLiveWorkoutStore = defineStore('liveWorkout', () => {
         currentSet,
         isLastExercise,
         isWorkoutComplete,
+        remainingSetsOnCurrentExercise,
+        currentRestSeconds,
         setWorkout,
         markSetCompleted,
         moveToNextExercise,

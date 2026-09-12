@@ -19,7 +19,7 @@ const nextProgress = computed(() => {
 </script>
 
 <template>
-    <section class="sys-panel sys-corners p-5">
+    <section class="sys-panel sys-panel-hover sys-corners sys-corners-x p-5">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-2.5">
                 <span class="text-brand"><Icon name="trophy" :size="18" /></span>

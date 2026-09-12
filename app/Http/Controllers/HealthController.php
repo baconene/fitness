@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Enums\GoalType;
 use App\Models\FitnessGoal;
+use App\Models\WaterLog;
+use App\Services\HydrationService;
 use App\Services\QuestGenerationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -41,6 +43,30 @@ class HealthController extends Controller
         $quests->synchronizeProgress($request->user());
 
         return back()->with('success', 'Measurement saved to your history.');
+    }
+
+    /**
+     * Records a drink. Quick-add buttons send preset sizes; the form sends a
+     * custom amount, so both land here.
+     */
+    public function storeWaterLog(Request $request, HydrationService $hydration, QuestGenerationService $quests): RedirectResponse
+    {
+        $data = $request->validate([
+            'amount_ml' => ['required', 'integer', 'between:1,5000'],
+        ]);
+
+        $hydration->log($request->user(), $data['amount_ml']);
+        $quests->synchronizeProgress($request->user());
+
+        return back()->with('success', 'Hydration logged.');
+    }
+
+    public function destroyWaterLog(Request $request, WaterLog $waterLog, HydrationService $hydration, QuestGenerationService $quests): RedirectResponse
+    {
+        $hydration->delete($request->user(), $waterLog);
+        $quests->synchronizeProgress($request->user());
+
+        return back()->with('success', 'Entry removed.');
     }
 
     public function storeGoal(Request $request): RedirectResponse

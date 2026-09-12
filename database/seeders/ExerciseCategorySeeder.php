@@ -17,6 +17,8 @@ class ExerciseCategorySeeder extends Seeder
             ['name' => 'Legs', 'slug' => 'legs', 'muscle_group' => 'quads'],
             ['name' => 'Core', 'slug' => 'core', 'muscle_group' => 'abs'],
             ['name' => 'Cardio', 'slug' => 'cardio', 'muscle_group' => 'calves'],
+            ['name' => 'Plyometrics', 'slug' => 'plyometrics', 'muscle_group' => 'quads'],
+            ['name' => 'Mobility', 'slug' => 'mobility', 'muscle_group' => 'lower_back'],
         ];
 
         foreach ($categories as $category) {

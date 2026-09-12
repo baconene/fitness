@@ -135,4 +135,71 @@ class M7CalendarTest extends TestCase
         $this->assertGreaterThan(0, count($weeks));
         $this->assertCount(7, $weeks[0]);
     }
+
+    public function test_calendar_page_renders_with_the_props_the_component_expects(): void
+    {
+        $user = User::factory()->create();
+        $profile = $user->hunterProfile()->create([
+            'rank' => HunterRank::ERank,
+            'awakened_at' => now(),
+        ]);
+        $profile->stats()->create();
+
+        $response = $this->actingAs($user)->get(route('calendar.show'));
+
+        $response->assertStatus(200);
+        $response->assertInertia(
+            fn ($page) => $page->component('Calendar/Index')
+                ->has('weeks')
+                ->has('weeks.0', 7)
+                ->has('weeks.0.0', fn ($day) => $day->hasAll(['date', 'day', 'isCurrentMonth', 'isToday', 'events']))
+                ->has('heatmapData')
+                ->where('currentYear', now()->year)
+                ->where('currentMonth', now()->month)
+        );
+    }
+
+    public function test_calendar_page_honours_an_explicit_year_and_month(): void
+    {
+        $user = User::factory()->create();
+        $profile = $user->hunterProfile()->create([
+            'rank' => HunterRank::ERank,
+            'awakened_at' => now(),
+        ]);
+        $profile->stats()->create();
+
+        $response = $this->actingAs($user)->get(route('calendar.show', ['year' => 2025, 'month' => 3]));
+
+        $response->assertStatus(200);
+        $response->assertInertia(
+            fn ($page) => $page->component('Calendar/Index')
+                ->where('currentYear', '2025')
+                ->where('currentMonth', '3')
+                ->where('weeks.0.0.date', '2025-02-24')
+        );
+    }
+
+    public function test_agenda_endpoint_returns_json_for_the_page(): void
+    {
+        $user = User::factory()->create();
+        $profile = $user->hunterProfile()->create([
+            'rank' => HunterRank::ERank,
+            'awakened_at' => now(),
+        ]);
+        $profile->stats()->create();
+
+        $workout = app(WorkoutService::class)->startWorkout($user);
+        $workout->update(['started_at' => now()]);
+
+        $response = $this->actingAs($user)
+            ->getJson(route('calendar.agenda', ['date' => now()->toDateString()]));
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure(['items' => [['type', 'title', 'icon', 'details']]]);
+    }
+
+    public function test_guests_cannot_reach_the_calendar(): void
+    {
+        $this->get(route('calendar.show'))->assertRedirect(route('login'));
+    }
 }

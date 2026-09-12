@@ -83,10 +83,14 @@ class WorkoutFlowTest extends TestCase
         $workout = $user->workouts()->firstOrFail();
         $this->assertSame('planned', $workout->status);
 
-        // A planned mission cannot be entered directly; it has to be started.
+        // A planned mission opens in a READY state — it is previewable before
+        // being started, but stays 'planned' until the hunter starts it.
         $this->actingAs($user)
             ->get(route('workouts.live.show', $workout))
-            ->assertRedirect(route('workouts.index'));
+            ->assertStatus(200)
+            ->assertInertia(fn ($page) => $page->component('Workouts/Live')->where('mission.status', 'READY'));
+
+        $this->assertSame('planned', $workout->fresh()->status);
 
         $this->actingAs($user)
             ->post(route('workouts.start', $workout))

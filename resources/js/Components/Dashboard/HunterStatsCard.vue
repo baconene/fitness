@@ -1,7 +1,8 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import gsap from 'gsap';
 import Icon from '@/Components/Icon.vue';
+import { rankClass } from '@/Support/rank';
 import { prefersReducedMotion } from '@/Composables/useReducedMotion';
 
 const props = defineProps({
@@ -19,6 +20,9 @@ const props = defineProps({
 const BAR_CEILING = 40;
 
 const barWidth = (value) => Math.min(100, (value / BAR_CEILING) * 100);
+
+/** Tints the promotion track with the rank being climbed towards. */
+const nextRankClass = computed(() => rankClass(props.nextRank));
 
 const root = ref(null);
 
@@ -43,7 +47,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <section ref="root" class="sys-panel sys-corners p-5">
+    <section ref="root" class="sys-panel sys-panel-hover sys-corners sys-corners-x p-5">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-2.5">
                 <span class="text-brand"><Icon name="diamond" :size="18" /></span>
@@ -67,10 +71,10 @@ onMounted(() => {
                         {{ attribute.value }}
                     </dd>
                 </div>
-                <div class="sys-track mt-1.5">
+                <div class="sys-seg mt-1.5">
                     <div
                         data-stat-fill
-                        class="sys-fill"
+                        class="sys-seg-fill"
                         :style="{ width: barWidth(attribute.value) + '%' }"
                     />
                 </div>
@@ -78,21 +82,22 @@ onMounted(() => {
         </dl>
 
         <!-- Next promotion -->
-        <div v-if="nextRank" class="sys-divider mt-5 pt-4">
-            <div class="flex items-baseline justify-between">
+        <div v-if="nextRank" :class="nextRankClass" class="sys-divider mt-5 pt-4">
+            <div class="flex items-center justify-between gap-3">
                 <p class="sys-label-sm">Next Rank</p>
-                <p class="text-[12px] text-muted">
-                    <span class="sys-display text-[14px] text-brand">{{ nextRank }}</span>
-                    <span class="ml-1.5">at level {{ nextRankLevel }}</span>
-                </p>
+                <div class="flex items-baseline gap-2">
+                    <span class="sys-rank-text sys-display text-[16px]">{{ nextRank }}</span>
+                    <span class="text-[12px] text-muted">at level {{ nextRankLevel }}</span>
+                </div>
             </div>
             <div class="sys-track mt-2">
                 <div
-                    class="h-full rounded-full"
+                    class="h-full rounded-full transition-[width] duration-700"
                     :style="{
                         width: rankProgress + '%',
-                        background: 'linear-gradient(90deg, rgb(118,87,255), rgb(161,140,255))',
-                        boxShadow: '0 0 10px rgba(118,87,255,0.6)',
+                        background:
+                            'linear-gradient(90deg, rgb(var(--rank-rgb) / 0.55), rgb(var(--rank-rgb)))',
+                        boxShadow: '0 0 10px rgb(var(--rank-rgb) / 0.65)',
                     }"
                 />
             </div>

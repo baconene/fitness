@@ -9,7 +9,9 @@ use App\Models\QuestReward;
 use App\Models\QuestTemplate;
 use App\Models\User;
 use App\Models\UserQuest;
+use App\Models\WorkoutSet;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 class QuestGenerationService
@@ -169,6 +171,12 @@ class QuestGenerationService
                 'workoutscompleted' => $user->workouts()->where('status', 'completed')->whereBetween('completed_at', [$start, $end])->count(),
                 'measurementslogged' => $user->healthMeasurements()->whereBetween('measured_at', [$quest->assigned_date->toDateString(), ($quest->expires_at ?? now())->toDateString()])->distinct()->count('measured_at'),
                 'personalrecords' => PersonalRecord::query()->where('user_id', $user->id)->whereBetween('achieved_at', [$start, $end])->count(),
+                'waterlitres' => (int) floor($user->waterLogs()->whereBetween('logged_at', [$start, $end])->sum('amount_ml') / 1000),
+                'activedays' => $user->workouts()->where('status', 'completed')
+                    ->whereBetween('completed_at', [$start, $end])
+                    ->selectRaw('date(completed_at) d')->distinct()->get()->count(),
+                'trainingminutes' => (int) floor($this->completedSets($user, $start, $end)->sum('duration_seconds') / 60),
+                'distancekm' => (int) floor($this->completedSets($user, $start, $end)->sum('distance_km')),
                 default => null,
             };
 
@@ -176,6 +184,20 @@ class QuestGenerationService
                 $quest->progress()->updateOrCreate([], ['current_value' => $value, 'last_updated_at' => now()]);
             }
         }
+    }
+
+    /**
+     * Completed sets belonging to the user, inside a window. Used by the
+     * duration and distance metrics.
+     *
+     * @return Builder<WorkoutSet>
+     */
+    private function completedSets(User $user, Carbon $start, Carbon $end)
+    {
+        return WorkoutSet::query()
+            ->where('is_completed', true)
+            ->whereBetween('completed_at', [$start, $end])
+            ->whereHas('workoutExercise.workout', fn ($query) => $query->where('user_id', $user->id));
     }
 
     public function expireStaleQuests(): int
