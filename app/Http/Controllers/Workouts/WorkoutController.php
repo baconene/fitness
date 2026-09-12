@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Workouts;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AddWorkoutExerciseRequest;
 use App\Http\Requests\StoreWorkoutRequest;
 use App\Http\Requests\UpdateWorkoutRequest;
 use App\Models\Exercise;
 use App\Models\ProgramDay;
 use App\Models\Workout;
+use App\Models\WorkoutExercise;
 use App\Services\WorkoutService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -61,5 +63,26 @@ class WorkoutController extends Controller
         $this->workoutService->updateWorkout($workout, $request->validated());
 
         return back()->with('success', 'Mission updated.');
+    }
+
+    /**
+     * Appends an exercise to a mission that is planned or already under way.
+     */
+    public function addExercise(AddWorkoutExerciseRequest $request, Workout $workout): RedirectResponse
+    {
+        $data = $request->validated();
+        $this->workoutService->addExercise($workout, $data['exercise_id'], $data['sets']);
+
+        return back()->with('success', 'Exercise added to this mission.');
+    }
+
+    public function removeExercise(Request $request, Workout $workout, WorkoutExercise $workoutExercise): RedirectResponse
+    {
+        Gate::authorize('update', $workout);
+        abort_unless($workoutExercise->workout_id === $workout->id, 403);
+
+        $this->workoutService->removeExercise($workout, $workoutExercise);
+
+        return back()->with('success', 'Exercise removed from this mission.');
     }
 }

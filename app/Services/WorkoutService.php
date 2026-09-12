@@ -13,6 +13,7 @@ use App\Models\ProgramDay;
 use App\Models\User;
 use App\Models\UserProgramEnrollment;
 use App\Models\Workout;
+use App\Models\WorkoutExercise;
 use App\Models\WorkoutSet;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -112,6 +113,69 @@ class WorkoutService
 
             $workout->fill(collect($data)->only(['name', 'scheduled_date', 'status'])->all());
             $workout->save();
+        });
+    }
+
+    /**
+     * Appends a single exercise to a planned or in-progress mission.
+     *
+     * Unlike updateWorkout(), this leaves existing exercises and their logged sets
+     * untouched, so it stays safe once a mission is under way.
+     */
+    public function addExercise(Workout $workout, int $exerciseId, int $sets): WorkoutExercise
+    {
+        return DB::transaction(function () use ($workout, $exerciseId, $sets): WorkoutExercise {
+            $workout = $workout->newQuery()->lockForUpdate()->findOrFail($workout->id);
+
+            if ($workout->status === 'completed') {
+                throw ValidationException::withMessages(['workout' => 'Completed missions are part of your permanent training history.']);
+            }
+
+            if ($workout->workoutExercises()->where('exercise_id', $exerciseId)->exists()) {
+                throw ValidationException::withMessages(['exercise_id' => 'That exercise is already part of this mission.']);
+            }
+
+            if ($workout->workoutExercises()->count() >= 20) {
+                throw ValidationException::withMessages(['exercise_id' => 'A mission can hold at most 20 exercises.']);
+            }
+
+            $workoutExercise = $workout->workoutExercises()->create([
+                'exercise_id' => $exerciseId,
+                'order' => (int) $workout->workoutExercises()->max('order') + 1,
+            ]);
+
+            for ($setNumber = 1; $setNumber <= $sets; $setNumber++) {
+                $workoutExercise->workoutSets()->create(['set_number' => $setNumber]);
+            }
+
+            return $workoutExercise->load('exercise', 'workoutSets');
+        });
+    }
+
+    /**
+     * Drops an exercise that has not been trained yet, keeping `order` contiguous.
+     */
+    public function removeExercise(Workout $workout, WorkoutExercise $workoutExercise): void
+    {
+        DB::transaction(function () use ($workout, $workoutExercise): void {
+            $workout = $workout->newQuery()->lockForUpdate()->findOrFail($workout->id);
+
+            if ($workout->status === 'completed') {
+                throw ValidationException::withMessages(['workout' => 'Completed missions are part of your permanent training history.']);
+            }
+
+            if ($workoutExercise->workoutSets()->where('is_completed', true)->exists()) {
+                throw ValidationException::withMessages(['exercise' => 'Sets are already logged for this exercise.']);
+            }
+
+            if ($workout->workoutExercises()->count() <= 1) {
+                throw ValidationException::withMessages(['exercise' => 'A mission needs at least one exercise.']);
+            }
+
+            $workoutExercise->delete();
+
+            $workout->workoutExercises()->orderBy('order')->get()
+                ->each(fn (WorkoutExercise $remaining, int $index) => $remaining->update(['order' => $index + 1]));
         });
     }
 

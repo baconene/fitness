@@ -20,9 +20,9 @@ const prescription = (exercise) =>
 <template>
     <section class="sys-panel sys-corners sys-corners-x flex h-full flex-col">
         <!-- Header -->
-        <div class="flex items-center justify-between border-b border-edge/15 px-5 py-4">
+        <div class="sys-window-head">
             <div class="flex items-center gap-2.5">
-                <span class="text-brand"><Icon name="sparkle" :size="18" /></span>
+                <span class="sys-pulse text-brand"><Icon name="sparkle" :size="18" /></span>
                 <h2 class="sys-label">Today’s Mission</h2>
             </div>
 
@@ -111,6 +111,8 @@ const prescription = (exercise) =>
                             );
                     "
                 />
+                <div class="sys-scanlines" />
+                <div class="sys-vignette" />
                 <div class="absolute inset-x-0 bottom-0 p-5 text-center">
                     <p
                         class="sys-display text-[13px] text-content/95"

@@ -2,6 +2,8 @@
 import { computed, onMounted, ref } from 'vue';
 import gsap from 'gsap';
 import Icon from '@/Components/Icon.vue';
+import RankSigil from '@/Components/Dashboard/RankSigil.vue';
+import { rankClass } from '@/Support/rank';
 import { prefersReducedMotion } from '@/Composables/useReducedMotion';
 
 const props = defineProps({
@@ -42,6 +44,9 @@ const today = new Date().toLocaleDateString('en-US', {
 });
 
 const initial = computed(() => (props.hunterName?.[0] ?? 'H').toUpperCase());
+
+/** Scopes --rank-rgb so the rank line and title pill share the rank's colour. */
+const rankTheme = computed(() => rankClass(props.rank));
 
 const xpPercent = computed(() => {
     if (!props.requiredXp) {
@@ -122,6 +127,8 @@ onMounted(() => {
             "
         />
 
+        <div class="sys-scanlines" />
+
         <div class="relative px-5 pb-10 pt-5 sm:px-8">
             <!-- Utility bar -->
             <div class="flex items-center justify-between">
@@ -172,17 +179,21 @@ onMounted(() => {
                         {{ hunterName.toUpperCase() }}
                     </h1>
 
-                    <div data-hero-line class="mt-3 flex flex-wrap items-center gap-3">
-                        <p
-                            class="sys-display text-[15px] text-content/80"
-                            style="letter-spacing: 0.1em"
-                        >
-                            {{ rank }}-RANK HUNTER
-                        </p>
-                        <span v-if="title" class="sys-pill sys-pill-active">
-                            <Icon name="trophy" :size="11" />
-                            {{ title }}
-                        </span>
+                    <div data-hero-line class="mt-4 flex flex-wrap items-center gap-4">
+                        <RankSigil :rank="rank" large />
+
+                        <div :class="rankTheme" class="flex flex-wrap items-center gap-2">
+                            <p
+                                class="sys-rank-text sys-display text-[15px]"
+                                style="letter-spacing: 0.1em"
+                            >
+                                {{ rank }}-RANK HUNTER
+                            </p>
+                            <span v-if="title" class="sys-pill sys-pill-rank">
+                                <Icon name="trophy" :size="11" />
+                                {{ title }}
+                            </span>
+                        </div>
                     </div>
 
                     <p
@@ -224,13 +235,14 @@ onMounted(() => {
                     class="sys-corners sys-corners-x relative w-full max-w-sm border border-edge/30 p-5 backdrop-blur-md xl:w-[340px]"
                     style="background: rgba(8, 14, 30, 0.66)"
                 >
-                    <p
-                        class="sys-display text-[13px] text-content"
-                        style="letter-spacing: 0.2em"
-                    >
-                        SYSTEM
-                    </p>
-                    <div class="my-3 h-px bg-edge/20" />
+                    <div class="flex items-center gap-2">
+                        <span class="sys-pulse h-1.5 w-1.5 rounded-full bg-brand" aria-hidden="true" />
+                        <p class="sys-display text-[13px] text-content" style="letter-spacing: 0.2em">
+                            SYSTEM
+                        </p>
+                        <span class="ml-auto text-[9px] tracking-[.2em] text-brand/70">ONLINE</span>
+                    </div>
+                    <div class="my-3 h-px bg-gradient-to-r from-brand/50 via-edge/20 to-transparent" />
                     <p
                         class="text-[11.5px] uppercase leading-[1.9] text-muted"
                         style="letter-spacing: 0.08em"

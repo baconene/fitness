@@ -23,7 +23,7 @@ const categoryClass = computed(
 </script>
 
 <template>
-    <article class="sys-panel sys-panel-hover sys-corners p-5">
+    <article class="sys-panel sys-panel-hover sys-corners sys-corners-x p-5">
         <div class="flex items-start gap-4">
             <span class="sys-badge text-content/80">
                 <Icon name="scale" :size="22" />
