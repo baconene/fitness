@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import gsap from 'gsap';
-import HunterSidebar from '@/Components/Dashboard/HunterSidebar.vue';
+import HunterNav from '@/Components/Dashboard/HunterNav.vue';
 import HunterBottomNav from '@/Components/Dashboard/HunterBottomNav.vue';
 import HunterHero from '@/Components/Dashboard/HunterHero.vue';
 import BmiCard from '@/Components/Dashboard/BmiCard.vue';
@@ -58,11 +58,12 @@ onMounted(() => {
     <div class="min-h-screen bg-canvas-deep">
         <Head title="Hunter Status" />
 
-        <HunterSidebar :open="navOpen" @close="navOpen = false" />
+        <HunterNav :open="navOpen" @close="navOpen = false" />
         <HunterBottomNav />
 
         <div class="lg:pl-[248px]">
             <HunterHero
+                :navigation-open="navOpen"
                 :hunter-name="hunter.name"
                 :rank="hunter.rank"
                 :level="hunter.level"

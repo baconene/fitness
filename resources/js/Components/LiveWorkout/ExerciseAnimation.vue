@@ -1,91 +1,45 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { demoFor } from '@/Support/exerciseDemos';
 
 const props = defineProps({
-    /** Exercise slug, e.g. 'bodyweight-squat'. */
     slug: { type: String, required: true },
+    name: { type: String, default: 'Exercise' },
 });
-
 const pose = computed(() => demoFor(props.slug));
-
+const playing = ref(false);
+const failed = ref(false);
+let motionPreference;
+const syncMotion = () => { playing.value = !motionPreference.matches; };
+onMounted(() => {
+    motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    syncMotion();
+    motionPreference.addEventListener('change', syncMotion);
+});
+onUnmounted(() => motionPreference?.removeEventListener('change', syncMotion));
+watch(() => props.slug, () => { failed.value = false; if (motionPreference) syncMotion(); });
 </script>
 
 <template>
-    <figure v-if="pose" class="exercise-demo sys-panel sys-corners sys-corners-x relative overflow-hidden">
-        <svg viewBox="0 0 100 120" class="block h-auto w-full" role="img" :aria-label="pose.label">
-            <!-- Ground line, so the figure reads as standing rather than floating. -->
-            <line x1="8" y1="113" x2="92" y2="113" class="ground" />
-
-            <g class="figure pose-a" v-html="pose.a" />
-            <g class="figure pose-b" v-html="pose.b" />
-        </svg>
-
-        <figcaption class="px-3 pb-3 text-center text-[11px] leading-relaxed text-muted">
-            {{ pose.label }}
-        </figcaption>
+    <figure class="exercise-demo overflow-hidden rounded border border-edge/20 bg-canvas">
+        <div class="flex items-center justify-between gap-3 border-b border-edge/15 px-4 py-1">
+            <p class="text-[10px] uppercase tracking-widest text-muted">Movement example</p>
+            <button v-if="pose && !failed" type="button" class="min-h-11 px-2 text-xs font-semibold text-brand" :aria-label="(playing ? 'Pause' : 'Play') + ' exercise demonstration'" @click="playing = !playing">{{ playing ? 'Pause' : 'Play' }}</button>
+            <span v-else class="flex min-h-11 items-center text-xs text-muted">{{ pose ? 'Still preview' : 'No demo yet' }}</span>
+        </div>
+        <div class="flex aspect-[5/3] max-h-64 items-center justify-center overflow-hidden bg-[#080e1c]">
+            <img v-if="pose && playing && !failed" :key="pose.slug" :src="pose.gif" :alt="name + ' movement demonstration'" width="400" height="240" decoding="async" class="h-full w-full object-contain" @error="failed = true" />
+            <svg v-else-if="pose" viewBox="0 0 200 120" class="h-full w-full" role="img" :aria-label="name + ' starting position'">
+                <line x1="58" y1="113" x2="142" y2="113" stroke="#46556e" stroke-width=".6" />
+                <g transform="translate(50 0)" class="demo-figure" v-html="pose.a" />
+            </svg>
+            <p v-else class="max-w-xs px-6 text-center text-sm leading-6 text-muted">A movement demonstration for {{ name }} is not available yet. Check the exercise guidance below.</p>
+        </div>
+        <figcaption v-if="pose" class="border-t border-edge/15 px-4 py-3 text-xs leading-6 text-muted">{{ pose.label }}</figcaption>
     </figure>
 </template>
 
 <style scoped>
-.exercise-demo {
-    background:
-        radial-gradient(70% 60% at 50% 35%, rgba(54, 163, 255, 0.09) 0%, transparent 70%),
-        linear-gradient(160deg, rgba(16, 25, 44, 0.92), rgba(8, 13, 26, 0.9));
-}
-
-.figure :deep(*) {
-    fill: none;
-    stroke: rgb(var(--color-brand));
-    stroke-width: 3.2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    filter: drop-shadow(0 0 4px rgb(var(--color-brand) / 0.55));
-}
-
-/* Dumbbells read as solid weight rather than outline. */
-.figure :deep(rect) {
-    fill: rgb(var(--color-violet-light));
-    stroke: none;
-}
-
-.ground {
-    stroke: rgb(var(--color-edge) / 0.25);
-    stroke-width: 1.5;
-    stroke-dasharray: 3 4;
-}
-
-.pose-a,
-.pose-b {
-    animation: demo-swap 1.8s steps(1, end) infinite;
-}
-
-.pose-b {
-    animation-delay: 0.9s;
-}
-
-@keyframes demo-swap {
-    0%,
-    50% {
-        opacity: 1;
-    }
-    50.01%,
-    100% {
-        opacity: 0;
-    }
-}
-
-/* Without motion, show only the end position so the shape is still teachable. */
-@media (prefers-reduced-motion: reduce) {
-    .pose-a,
-    .pose-b {
-        animation: none;
-    }
-    .pose-a {
-        opacity: 0;
-    }
-    .pose-b {
-        opacity: 1;
-    }
-}
+.demo-figure :deep(*) { fill: none; stroke: #4ea7ff; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+.demo-figure :deep(rect) { fill: #9f8cff; stroke: none; }
 </style>

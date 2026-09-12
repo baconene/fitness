@@ -26,8 +26,7 @@ defineProps({
             </span>
         </p>
 
-        <!-- Renders only for slugs that have a demonstration authored. -->
-        <ExerciseAnimation v-if="exercise.slug" :slug="exercise.slug" class="mt-4 max-w-[200px]" />
+        <ExerciseAnimation :slug="exercise.slug || exercise.name" :name="exercise.name" class="mt-4" />
 
         <details v-if="exercise.instructions" class="mt-3 text-xs leading-relaxed text-muted">
             <summary class="min-h-11 cursor-pointer py-3 text-brand">Exercise guidance</summary>

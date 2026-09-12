@@ -27,7 +27,7 @@ const active = (name) => currentPath.value === new URL(route(name), window.locat
                 <span class="grid h-10 w-10 place-items-center border border-brand/40 bg-brand/10 text-brand"><Icon name="diamond" :size="24" /></span>
                 <span><strong class="sys-display block text-sm tracking-[.14em]">HUNTER SYSTEM</strong><span class="mt-1 block text-[9px] tracking-[.2em] text-muted">YOUR NEXT EVOLUTION</span></span>
             </Link>
-            <button v-if="mobile" type="button" class="ml-auto grid h-11 w-11 place-items-center text-muted" aria-label="Close navigation" @click="$emit('close')"><Icon name="x" :size="20" /></button>
+            <button v-if="mobile" type="button" class="ml-auto grid h-11 w-11 shrink-0 place-items-center text-muted" aria-label="Close navigation" @click="$emit('close')"><Icon name="x" :size="20" /></button>
         </div>
         <nav aria-label="Main navigation" class="flex-1 overflow-y-auto px-3 py-5">
             <div v-for="group in groups" :key="group.label" class="mb-6">

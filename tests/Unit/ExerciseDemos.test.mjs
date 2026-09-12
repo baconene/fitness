@@ -2,10 +2,21 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { EXERCISE_DEMOS, demoFor } from '../../resources/js/Support/exerciseDemos.js';
 
-test('an unknown slug yields no demonstration, so the component renders nothing', () => {
+test('an unknown slug yields no demonstration rather than an unrelated movement', () => {
     assert.equal(demoFor('not-a-real-exercise'), null);
     assert.equal(demoFor(undefined), null);
     assert.equal(demoFor(''), null);
+    assert.equal(demoFor('__proto__'), null);
+    assert.equal(demoFor('incline-bench-press'), null);
+});
+
+test('bench press resolves the same local GIF for seeded and legacy slugs', () => {
+    const bench = demoFor('bench-press');
+    assert.equal(bench.gif, '/images/exercises/bench-press.gif');
+    assert.match(bench.label, /bench press/i);
+    assert.deepEqual(demoFor('bench_press'), bench);
+    assert.deepEqual(demoFor('Bench Press'), bench);
+    assert.notEqual(bench.a, bench.b);
 });
 
 test('a known slug yields both poses and a coaching label', () => {

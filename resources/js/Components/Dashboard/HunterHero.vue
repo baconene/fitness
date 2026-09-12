@@ -7,6 +7,7 @@ import { rankClass } from '@/Support/rank';
 import { prefersReducedMotion } from '@/Composables/useReducedMotion';
 
 const props = defineProps({
+    navigationOpen: { type: Boolean, default: false },
     hunterName: { type: String, default: 'HUNTER' },
     rank: { type: String, default: 'E' },
     level: { type: Number, default: 1 },
@@ -133,8 +134,11 @@ onMounted(() => {
             <!-- Utility bar -->
             <div class="flex items-center justify-between">
                 <button
-                    class="text-muted transition hover:text-content lg:hidden"
+                    type="button"
+                    class="grid h-11 w-11 place-items-center text-muted transition hover:text-content lg:hidden"
                     aria-label="Open navigation"
+                    :aria-expanded="navigationOpen"
+                    aria-controls="hunter-navigation-drawer"
                     @click="$emit('toggle-nav')"
                 >
                     <Icon name="menu" :size="22" />

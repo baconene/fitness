@@ -2,13 +2,30 @@
  * Hand-authored two-pose exercise demonstrations.
  *
  * Each entry holds the start (`a`) and end (`b`) position of the movement as
- * plain SVG markup on a 100x120 stage. ExerciseAnimation.vue cross-fades the
- * two so the movement reads like a demo GIF, with no binary assets to ship.
+ * plain SVG markup on a 100x120 stage. Matching GIFs in public/images/exercises
+ * provide the animated preview; the first pose is the accessible still preview.
  *
  * Adding an exercise means adding its slug here. Slugs must match
- * ExerciseSeeder, and anything not listed simply renders nothing.
+ * ExerciseSeeder. Unlisted exercises display an explicit unavailable state.
  */
 export const EXERCISE_DEMOS = {
+    'bench-press': {
+        label: 'Bench press: feet planted, upper back on the bench. Lower the bar under control, then press up.',
+        a: `<path d="M12 82 H66 M20 83 V110 M61 83 V110"/>
+            <circle cx="21" cy="68" r="7"/>
+            <path d="M28 73 L57 73 L75 86 L80 109 H91"/>
+            <path d="M34 73 L37 51 L40 29"/>
+            <path d="M18 29 H64"/>
+            <rect x="22" y="22" width="6" height="14" rx="1"/>
+            <rect x="54" y="22" width="6" height="14" rx="1"/>`,
+        b: `<path d="M12 82 H66 M20 83 V110 M61 83 V110"/>
+            <circle cx="21" cy="68" r="7"/>
+            <path d="M28 73 L57 73 L75 86 L80 109 H91"/>
+            <path d="M34 73 L54 81 L45 61"/>
+            <path d="M23 61 H69"/>
+            <rect x="27" y="54" width="6" height="14" rx="1"/>
+            <rect x="59" y="54" width="6" height="14" rx="1"/>`,
+    },
     'bodyweight-squat': {
         label: 'Squat: hips back and down, chest tall, knees tracking over toes.',
         a: `<circle cx="50" cy="16" r="8"/>
@@ -73,4 +90,8 @@ export const EXERCISE_DEMOS = {
 };
 
 /** The demonstration for a slug, or null when none is authored. */
-export const demoFor = (slug) => EXERCISE_DEMOS[slug] ?? null;
+export const demoFor = (slug) => {
+    const key = typeof slug === 'string' ? slug.toLowerCase().trim().replaceAll('_', '-').replaceAll(' ', '-') : '';
+
+    return Object.hasOwn(EXERCISE_DEMOS, key) ? { ...EXERCISE_DEMOS[key], slug: key, gif: `/images/exercises/${key}.gif` } : null;
+};

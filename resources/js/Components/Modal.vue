@@ -46,12 +46,9 @@ const close = () => {
 };
 
 const closeOnEscape = (e) => {
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' && props.show) {
         e.preventDefault();
-
-        if (props.show) {
-            close();
-        }
+        close();
     }
 };
 
