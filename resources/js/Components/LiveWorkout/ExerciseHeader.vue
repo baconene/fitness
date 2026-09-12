@@ -1,4 +1,6 @@
 <script setup>
+import ExerciseAnimation from '@/Components/LiveWorkout/ExerciseAnimation.vue';
+
 defineProps({
     exercise: { type: Object, required: true },
     targetReps: { type: String, default: null },
@@ -23,6 +25,9 @@ defineProps({
                 <template v-if="previousSet.weight_kg"> · {{ previousSet.weight_kg }} kg</template>
             </span>
         </p>
+
+        <!-- Renders only for slugs that have a demonstration authored. -->
+        <ExerciseAnimation v-if="exercise.slug" :slug="exercise.slug" class="mt-4 max-w-[200px]" />
 
         <details v-if="exercise.instructions" class="mt-3 text-xs leading-relaxed text-muted">
             <summary class="min-h-11 cursor-pointer py-3 text-brand">Exercise guidance</summary>
