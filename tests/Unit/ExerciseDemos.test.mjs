@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { EXERCISE_DEMOS, demoFor } from '../../resources/js/Support/exerciseDemos.js';
+import { exercisePose } from '../../resources/js/Support/exerciseDemoScene.js';
+import { readFileSync } from 'node:fs';
 
 test('an unknown slug yields no demonstration rather than an unrelated movement', () => {
     assert.equal(demoFor('not-a-real-exercise'), null);
@@ -13,10 +15,46 @@ test('an unknown slug yields no demonstration rather than an unrelated movement'
 test('bench press resolves the same local GIF for seeded and legacy slugs', () => {
     const bench = demoFor('bench-press');
     assert.equal(bench.gif, '/images/exercises/bench-press.gif');
+    assert.equal(bench.poster, '/images/exercises/bench-press.png');
     assert.match(bench.label, /bench press/i);
     assert.deepEqual(demoFor('bench_press'), bench);
     assert.deepEqual(demoFor('Bench Press'), bench);
     assert.notEqual(bench.a, bench.b);
+});
+
+test('every seeded demo ships an animated GIF and matching PNG poster', () => {
+    for (const slug of Object.keys(EXERCISE_DEMOS)) {
+        const demo = demoFor(slug);
+        const gif = readFileSync(new URL(`../../public${demo.gif}`, import.meta.url));
+        const poster = readFileSync(new URL(`../../public${demo.poster}`, import.meta.url));
+        assert.equal(gif.subarray(0, 6).toString(), 'GIF89a');
+        assert.equal(gif.readUInt16LE(6), 400);
+        assert.equal(gif.readUInt16LE(8), 240);
+        assert.equal(poster.subarray(1, 4).toString(), 'PNG');
+        assert.equal(poster.readUInt32BE(16), 400);
+        assert.equal(poster.readUInt32BE(20), 240);
+    }
+});
+
+test('3D movement loops join continuously and keep bench feet planted', () => {
+    for (const slug of Object.keys(EXERCISE_DEMOS)) {
+        const start = exercisePose(slug, 0);
+        const end = exercisePose(slug, 1);
+        for (const group of ['arms', 'legs']) {
+            start[group].forEach((limb, index) => {
+                for (const joint of Object.keys(limb)) {
+                    limb[joint].forEach((value, axis) => {
+                        assert.ok(Math.abs(value - end[group][index][joint][axis]) < 0.000001);
+                    });
+                }
+            });
+        }
+    }
+    const top = exercisePose('bench-press', 0);
+    const bottom = exercisePose('bench-press', 0.5);
+    assert.deepEqual(top.legs, bottom.legs);
+    assert.ok(top.arms[0].wrist[1] > bottom.arms[0].wrist[1]);
+    assert.equal(bottom.arms[0].wrist[1], bottom.arms[1].wrist[1]);
 });
 
 test('a known slug yields both poses and a coaching label', () => {

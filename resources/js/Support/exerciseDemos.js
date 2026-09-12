@@ -93,5 +93,10 @@ export const EXERCISE_DEMOS = {
 export const demoFor = (slug) => {
     const key = typeof slug === 'string' ? slug.toLowerCase().trim().replaceAll('_', '-').replaceAll(' ', '-') : '';
 
-    return Object.hasOwn(EXERCISE_DEMOS, key) ? { ...EXERCISE_DEMOS[key], slug: key, gif: `/images/exercises/${key}.gif` } : null;
+    return Object.hasOwn(EXERCISE_DEMOS, key) ? {
+        ...EXERCISE_DEMOS[key],
+        slug: key,
+        gif: `/images/exercises/${key}.gif`,
+        poster: `/images/exercises/${key}.png`,
+    } : null;
 };

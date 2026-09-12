@@ -9,6 +9,7 @@ const props = defineProps({
 const pose = computed(() => demoFor(props.slug));
 const playing = ref(false);
 const failed = ref(false);
+const posterFailed = ref(false);
 let motionPreference;
 const syncMotion = () => { playing.value = !motionPreference.matches; };
 onMounted(() => {
@@ -17,7 +18,7 @@ onMounted(() => {
     motionPreference.addEventListener('change', syncMotion);
 });
 onUnmounted(() => motionPreference?.removeEventListener('change', syncMotion));
-watch(() => props.slug, () => { failed.value = false; if (motionPreference) syncMotion(); });
+watch(() => props.slug, () => { failed.value = false; posterFailed.value = false; if (motionPreference) syncMotion(); });
 </script>
 
 <template>
@@ -29,17 +30,9 @@ watch(() => props.slug, () => { failed.value = false; if (motionPreference) sync
         </div>
         <div class="flex aspect-[5/3] max-h-64 items-center justify-center overflow-hidden bg-[#080e1c]">
             <img v-if="pose && playing && !failed" :key="pose.slug" :src="pose.gif" :alt="name + ' movement demonstration'" width="400" height="240" decoding="async" class="h-full w-full object-contain" @error="failed = true" />
-            <svg v-else-if="pose" viewBox="0 0 200 120" class="h-full w-full" role="img" :aria-label="name + ' starting position'">
-                <line x1="58" y1="113" x2="142" y2="113" stroke="#46556e" stroke-width=".6" />
-                <g transform="translate(50 0)" class="demo-figure" v-html="pose.a" />
-            </svg>
+            <img v-else-if="pose && !posterFailed" :key="pose.slug + '-poster'" :src="pose.poster" :alt="name + ' starting position'" width="400" height="240" decoding="async" class="h-full w-full object-contain" @error="posterFailed = true" />
             <p v-else class="max-w-xs px-6 text-center text-sm leading-6 text-muted">A movement demonstration for {{ name }} is not available yet. Check the exercise guidance below.</p>
         </div>
         <figcaption v-if="pose" class="border-t border-edge/15 px-4 py-3 text-xs leading-6 text-muted">{{ pose.label }}</figcaption>
     </figure>
 </template>
-
-<style scoped>
-.demo-figure :deep(*) { fill: none; stroke: #4ea7ff; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
-.demo-figure :deep(rect) { fill: #9f8cff; stroke: none; }
-</style>
