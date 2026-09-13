@@ -8,6 +8,8 @@
  * Adding an exercise means adding its slug here. Slugs must match
  * ExerciseSeeder. Unlisted exercises display an explicit unavailable state.
  */
+import { archetypeLabel } from './exerciseArchetypes.js';
+
 export const EXERCISE_DEMOS = {
     'bench-press': {
         label: 'Bench press: feet planted, upper back on the bench. Lower the bar under control, then press up.',
@@ -89,16 +91,31 @@ export const EXERCISE_DEMOS = {
     },
 };
 
-/** The demonstration for a slug, or null when none is authored. */
-export const demoFor = (slug) => {
+/**
+ * The demonstration for a slug, or null when none exists.
+ *
+ * Six movements have bespoke poses in EXERCISE_DEMOS; the rest are rendered
+ * from a movement archetype. Both produce artwork under the same name in
+ * public/images/exercises, so they resolve identically here.
+ */
+export const demoFor = (slug, name = null) => {
     const key = typeof slug === 'string' ? slug.toLowerCase().trim().replaceAll('_', '-').replaceAll(' ', '-') : '';
     // Bump when replacing public assets so returning browsers fetch the new artwork.
-    const artworkVersion = key === 'plank' ? 'plank-wireframe-2' : '3d-1';
+    const artworkVersion = 'wireframe-3';
 
-    return Object.hasOwn(EXERCISE_DEMOS, key) ? {
-        ...EXERCISE_DEMOS[key],
+    const readableName = name ?? key.replaceAll('-', ' ').replace(/^./, (c) => c.toUpperCase());
+    const hand = Object.hasOwn(EXERCISE_DEMOS, key) ? EXERCISE_DEMOS[key] : null;
+    const label = hand?.label ?? archetypeLabel(key, readableName);
+
+    if (!label) {
+        return null;
+    }
+
+    return {
+        ...(hand ?? {}),
+        label,
         slug: key,
         gif: `/images/exercises/${key}.gif?v=${artworkVersion}`,
         poster: `/images/exercises/${key}.png?v=${artworkVersion}`,
-    } : null;
+    };
 };

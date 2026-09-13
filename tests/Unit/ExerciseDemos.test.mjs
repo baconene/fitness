@@ -1,15 +1,38 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { EXERCISE_DEMOS, demoFor } from '../../resources/js/Support/exerciseDemos.js';
-import { exercisePose } from '../../resources/js/Support/exerciseDemoScene.js';
+import { exerciseCamera, exercisePose } from '../../resources/js/Support/exerciseDemoScene.js';
+import { ARCHETYPES } from '../../resources/js/Support/exerciseArchetypes.js';
 import { readFileSync } from 'node:fs';
+
+test('every exercise stays inside the same camera frame for its full motion', () => {
+    const slugs = new Set([...Object.keys(EXERCISE_DEMOS), ...Object.keys(ARCHETYPES)]);
+    for (const slug of slugs) {
+        const camera = exerciseCamera(slug);
+        for (let frame = 0; frame < 32; frame++) {
+            const pose = exercisePose(slug, frame / 32);
+            const points = [pose.head, pose.pelvis, ...pose.arms.flatMap(Object.values), ...pose.legs.flatMap(Object.values)];
+            for (const point of points) {
+                const projected = camera.project(point);
+                const x = 200 + (projected[0] - camera.center[0]) * camera.scale;
+                const y = 120 + (projected[1] - camera.center[1]) * camera.scale;
+                assert.ok(Number.isFinite(x) && Number.isFinite(y), `${slug} has invalid geometry`);
+                assert.ok(x > 15 && x < 385 && y > 15 && y < 225, `${slug} clips at frame ${frame}`);
+            }
+        }
+    }
+});
 
 test('an unknown slug yields no demonstration rather than an unrelated movement', () => {
     assert.equal(demoFor('not-a-real-exercise'), null);
     assert.equal(demoFor(undefined), null);
     assert.equal(demoFor(''), null);
     assert.equal(demoFor('__proto__'), null);
-    assert.equal(demoFor('incline-bench-press'), null);
+
+    // incline-bench-press used to be unavailable; it is now archetype-rendered,
+    // so the null case needs a slug that is genuinely in neither set.
+    assert.ok(demoFor('incline-bench-press'), 'archetype slugs should now resolve');
+    assert.equal(demoFor('interpretive-dance'), null);
 });
 
 test('bench press resolves the same local GIF for seeded and legacy slugs', () => {
@@ -20,6 +43,37 @@ test('bench press resolves the same local GIF for seeded and legacy slugs', () =
     assert.deepEqual(demoFor('bench_press'), bench);
     assert.deepEqual(demoFor('Bench Press'), bench);
     assert.notEqual(bench.a, bench.b);
+});
+
+test('every archetype-rendered exercise ships artwork too', () => {
+    const slugs = Object.keys(ARCHETYPES);
+
+    assert.ok(slugs.length > 90, 'the archetype map should cover the catalogue');
+
+    const missing = slugs.filter((slug) => {
+        const demo = demoFor(slug);
+
+        if (!demo) {
+            return true;
+        }
+
+        return ['gif', 'poster'].some((kind) => {
+            try {
+                return readFileSync(new URL(`../../public${demo[kind].split('?')[0]}`, import.meta.url)).length === 0;
+            } catch {
+                return true;
+            }
+        });
+    });
+
+    assert.deepEqual(missing, [], `no artwork rendered for: ${missing.join(', ')}`);
+});
+
+test('archetype demos carry a coaching label naming the exercise', () => {
+    const demo = demoFor('romanian-deadlift', 'Romanian Deadlift');
+
+    assert.match(demo.label, /^Romanian Deadlift:/);
+    assert.ok(demo.label.length > 25, 'the label should be a real cue, not a stub');
 });
 
 test('every seeded demo ships an animated GIF and matching PNG poster', () => {
