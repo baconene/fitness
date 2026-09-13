@@ -80,7 +80,7 @@ const demoCount = computed(() => props.exercises.filter((exercise) => hasDemo(ex
 
             <p class="mt-3 text-[11px] text-muted">
                 Showing {{ filtered.length }} of {{ exercises.length }} ·
-                {{ demoCount }} with an animated demonstration so far.
+                {{ demoCount }} with an animated demonstration.
             </p>
         </div>
 

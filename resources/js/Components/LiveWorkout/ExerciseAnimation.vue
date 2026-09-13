@@ -8,7 +8,7 @@ const props = defineProps({
     /** Card mode: drops the header bar and caption, keeping just the artwork. */
     compact: { type: Boolean, default: false },
 });
-const pose = computed(() => demoFor(props.slug));
+const pose = computed(() => demoFor(props.slug, props.name));
 const playing = ref(false);
 const failed = ref(false);
 const posterFailed = ref(false);
