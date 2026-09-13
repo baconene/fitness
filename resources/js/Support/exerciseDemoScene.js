@@ -71,6 +71,25 @@ export function exercisePose(slug, phase) {
             arm.elbow=add(arm.shoulder,[0,-.28*Math.cos(angle),.28*Math.sin(angle)]);
             arm.wrist=add(arm.elbow,[0,.08,.25]);
         });
+    } else if(slug==='incline-treadmill-walk') {
+        pose.pelvis=[0,1.05+.008*Math.cos(phase*Math.PI*4),0];
+        pose.neck=add(pose.pelvis,[0,.63,.055]);
+        pose.head=add(pose.neck,[0,.15,.013]);
+        pose.legs=[-1,1].map((side,index)=>{
+            const cycle=((phase+index*.5)%1+1)%1;
+            const swing=Math.max(0,(cycle-.6)/.4);
+            const z=cycle<.6?.24-.48*cycle/.6:-.24+.48*(swing*swing*(3-2*swing));
+            const lift=cycle<.6?0:.085*Math.sin(Math.PI*swing);
+            const hip=add(pose.pelvis,[side*.12,-.025,0]);
+            const ankle=[side*.13,treadmillBeltHeight(z)+.08+lift,z];
+            return {hip,ankle,knee:joint(hip,ankle,.43,.43,[0,0,1])};
+        });
+        pose.arms=[-1,1].map((side,index)=>{
+            const swing=-.16*Math.cos(phase*Math.PI*2+index*Math.PI);
+            const shoulder=add(pose.neck,[side*.235,-.12,0]);
+            const elbow=add(shoulder,[side*.025,-.29,swing]);
+            return {shoulder,elbow,wrist:add(elbow,[0,-.22,.10])};
+        });
     } else if(archetypeFor(slug)) {
         archetypePose(pose, archetypeFor(slug), t, phase);
     }
@@ -514,6 +533,8 @@ function stretchPose(pose, variant, t) {
         return {shoulder,wrist,elbow:joint(shoulder,wrist,UPPER_ARM,FOREARM,[side,.2,.4])};});
 }
 
+export const treadmillBeltHeight = (z) => .16+.12*z;
+
 const cameraFrames = new Map();
 
 /** Fit the whole motion once so the camera stays still throughout the loop. */
@@ -521,7 +542,7 @@ export function exerciseCamera(slug) {
     if (cameraFrames.has(slug)) return cameraFrames.get(slug);
     const initial = exercisePose(slug, 0);
     const horizontal = slug === 'bench-press' || initial.prone || initial.horizontal;
-    const yaw = horizontal ? -1.02 : .48;
+    const yaw = slug==='incline-treadmill-walk' ? -1.05 : horizontal ? -1.02 : .48;
     const pitch = horizontal ? .24 : .12;
     const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
     const project = ([x,y,z]) => [x*cy-z*sy, -y*cp+(x*sy+z*cy)*sp, (x*sy+z*cy)*cp+y*sp];
@@ -529,6 +550,7 @@ export function exerciseCamera(slug) {
     for (let frame = 0; frame < 32; frame++) {
         const pose = exercisePose(slug, frame/32);
         const points = [pose.head, pose.neck, pose.pelvis, ...pose.arms.flatMap(Object.values), ...pose.legs.flatMap(Object.values)];
+        if(slug==='incline-treadmill-walk') points.push([-.5,.02,-.85],[.5,1.44,1]);
         for (const point of points) {
             const [x,y] = project(point);
             bounds[0] = Math.min(bounds[0], x-.23);
@@ -584,6 +606,28 @@ export function drawExerciseDemo(canvas, slug, phase) {
         const right=unit(cross(axis,reference)),forward=unit(cross(right,axis));
         ellipsoid(mix(a,b,.5),[width,Math.hypot(...sub(b,a))*.56,depth],color,[right,axis,forward]);
     };
+    if(slug==='incline-treadmill-walk') {
+        const panel=(points,fill,stroke='#344f68')=>{
+            const projected=points.map(camera);
+            faces.push({points:projected,depth:projected.reduce((sum,p)=>sum+p[2],0)/projected.length,fill,stroke});
+        };
+        const belt=(x,z)=>[x,treadmillBeltHeight(z),z];
+        panel([belt(-.43,-.85),belt(.43,-.85),belt(.43,.9),belt(-.43,.9)],'#253749');
+        for(const side of [-1,1]) {
+            const x=side*.43;
+            panel([belt(x,-.85),belt(x,.9),[x,.03,.9],[x,.03,-.85]],'#172432');
+            bone([side*.40,treadmillBeltHeight(.78),.78],[side*.40,1.27,.9],.027,.027,[83,111,134]);
+            bone([side*.40,1.12,.82],[side*.40,1.08,.13],.025,.025,[83,111,134]);
+        }
+        panel([belt(-.43,-.85),belt(.43,-.85),[.43,.03,-.85],[-.43,.03,-.85]],'#1c2b3b');
+        panel([belt(-.34,-.79),belt(.34,-.79),belt(.34,.80),belt(-.34,.80)],'#101d29');
+        for(let mark=0;mark<12;mark++) {
+            const z=-.78+((mark/12-phase*.5+1)%1)*1.56;
+            panel([[-.33,treadmillBeltHeight(z)+.004,z],[.33,treadmillBeltHeight(z)+.004,z],[.33,treadmillBeltHeight(z+.012)+.004,z+.012],[-.33,treadmillBeltHeight(z+.012)+.004,z+.012]],'#354b5c','#354b5c');
+        }
+        panel([[-.48,1.27,.82],[.48,1.27,.82],[.48,1.44,1],[-.48,1.44,1]],'#253b50');
+        panel([[-.20,1.31,.85],[.20,1.31,.85],[.20,1.40,.95],[-.20,1.40,.95]],'#416e8b','#76b5d6');
+    }
     const up=unit(sub(pose.neck,pose.pelvis)),right=[1,0,0];
     const forward=mul(unit(cross(right,up)),pose.prone?-1:1),basis=[right,up,forward];
     const body=(height,x,depth)=>add(mix(pose.pelvis,pose.neck,height),add(mul(right,x),mul(forward,depth)));
@@ -627,7 +671,7 @@ export function drawExerciseDemo(canvas, slug, phase) {
         ellipsoid(arm.elbow,[.044,.046,.043]);
         bone(arm.elbow,arm.wrist,.047,.039);
         const handAxis=unit(sub(arm.wrist,arm.elbow)),handEnd=add(arm.wrist,mul(handAxis,.085));
-        if (slug==='bench-press' || slug==='dumbbell-curl' || loadFor(slug)) {
+        if (slug==='bench-press' || slug==='dumbbell-curl' || slug==='incline-treadmill-walk' || loadFor(slug)) {
             ellipsoid(arm.wrist,[.043,.039,.038]);
             ellipsoid(add(arm.wrist,[.027,.017,.012]),[.014,.025,.018]);
         } else {
@@ -675,5 +719,5 @@ export function drawExerciseDemo(canvas, slug, phase) {
     const ground=camera([0,0,.12]);
     ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(ground[0],ground[1],horizontal?105:53,9,0,0,Math.PI*2);ctx.fill();
     faces.sort((a,b)=>a.depth-b.depth);
-    for(const face of faces) {ctx.beginPath();face.points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fillStyle=face.fill;ctx.strokeStyle='rgba(115,193,245,.20)';ctx.lineWidth=.4;ctx.fill();ctx.stroke();}
+    for(const face of faces) {ctx.beginPath();face.points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fillStyle=face.fill;ctx.strokeStyle=face.stroke??'rgba(115,193,245,.20)';ctx.lineWidth=.4;ctx.fill();ctx.stroke();}
 }
