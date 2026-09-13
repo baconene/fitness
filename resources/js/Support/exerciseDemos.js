@@ -93,7 +93,7 @@ export const EXERCISE_DEMOS = {
 export const demoFor = (slug) => {
     const key = typeof slug === 'string' ? slug.toLowerCase().trim().replaceAll('_', '-').replaceAll(' ', '-') : '';
     // Bump when replacing public assets so returning browsers fetch the new artwork.
-    const artworkVersion = '3d-1';
+    const artworkVersion = key === 'plank' ? 'plank-wireframe-2' : '3d-1';
 
     return Object.hasOwn(EXERCISE_DEMOS, key) ? {
         ...EXERCISE_DEMOS[key],

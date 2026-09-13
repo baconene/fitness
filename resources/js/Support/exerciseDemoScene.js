@@ -52,7 +52,7 @@ export function exercisePose(slug, phase) {
         });
         pose.arms= [-1,1].map(side=>{
             const shoulder=[side*.245,.51-drop,-.43];
-            if(slug==='plank') { shoulder[1]=.37-drop;return {shoulder,elbow:[side*.245,.09,-.36],wrist:[side*.245,.07,-.64]}; }
+            if(slug==='plank') { shoulder[1]=.42-drop;return {shoulder,elbow:[side*.245,.09,-.43],wrist:[side*.245,.065,-.72]}; }
             const wrist=[side*.28,.07,-.46];return {shoulder,wrist,elbow:joint(shoulder,wrist,.29,.27,[side,0,.4])};
         });
         if(slug==='plank') {pose.neck[1]-=.12;pose.head[1]-=.12;pose.pelvis[1]-=.06;pose.legs.forEach((leg)=>{leg.hip[1]-=.06;leg.knee=mix(leg.hip,leg.ankle,.5);});}
@@ -83,8 +83,9 @@ export function drawExerciseDemo(canvas, slug, phase) {
     const camera=p=>{const q=sub(p,center),depth=q[0]*sy+q[2]*cy;return [200+(q[0]*cy-q[2]*sy)*scale,121+(-q[1]*cp+depth*sp)*scale,depth*cp+q[1]*sp];};
     const view=unit([sy,sp,cy]),light=unit([-.6,.85,.9]);
     const faces=[];
+    const plank = slug === 'plank';
     const ellipsoid=(position,radii,color=neutral,basis=[[1,0,0],[0,1,0],[0,0,1]])=>{
-        const latitude=18,longitude=28, vertices=[];
+        const latitude=plank?12:18,longitude=plank?18:28, vertices=[];
         for(let a=0;a<=latitude;a++) {
             const theta=Math.PI*a/latitude;
             for(let b=0;b<=longitude;b++) {
@@ -117,6 +118,29 @@ export function drawExerciseDemo(canvas, slug, phase) {
     const forward=mul(unit(cross(right,up)),pose.prone?-1:1),basis=[right,up,forward];
     const body=(height,x,depth)=>add(mix(pose.pelvis,pose.neck,height),add(mul(right,x),mul(forward,depth)));
     const chestFocus=['bench-press','push-up'].includes(slug),legsFocus=slug==='bodyweight-squat',coreFocus=slug==='plank';
+    if (plank) {
+        // Continuous hip-to-neck surface avoids the disconnected mannequin segments.
+        const rings = [[-.14,.08,.07],[-.05,.145,.10],[.08,.17,.115],[.22,.155,.103],[.36,.148,.097],[.50,.173,.108],[.64,.20,.12],[.76,.215,.113],[.86,.18,.095],[.96,.09,.065],[1.08,.052,.052]];
+        const segments = 24;
+        const vertices = rings.map(([height,width,depth]) => Array.from({length:segments}, (_,index) => {
+            const angle=index/segments*Math.PI*2;
+            const point=body(height,Math.cos(angle)*width,Math.sin(angle)*depth);
+            const normal=unit(add(mul(right,Math.cos(angle)/width),mul(forward,Math.sin(angle)/depth)));
+            return {point:camera(point),normal};
+        }));
+        for(let ring=0;ring<rings.length-1;ring++) {
+            for(let index=0;index<segments;index++) {
+                const next=(index+1)%segments;
+                const points=[vertices[ring][index],vertices[ring][next],vertices[ring+1][next],vertices[ring+1][index]];
+                const normal=unit(points.reduce((sum,vertex)=>add(sum,vertex.normal),[0,0,0]));
+                if(dot(normal,view)<0) continue;
+                const core=ring>=2 && ring<=5;
+                const color=core?blue:neutral;
+                const shade=.34+.66*Math.max(0,dot(normal,light));
+                faces.push({points:points.map(vertex=>vertex.point),depth:points.reduce((sum,vertex)=>sum+vertex.point[2],0)/4,fill:`rgb(${color.map(value=>Math.round(value*shade)).join(',')})`});
+            }
+        }
+    } else {
     ellipsoid(body(.52,0,0),[.215,.235,.115],neutral,basis);
     ellipsoid(body(.18,0,0),[.15,.16,.105],neutral,basis);
     ellipsoid(pose.pelvis,[.166,.13,.113],[62,78,102],basis);
@@ -127,6 +151,7 @@ export function drawExerciseDemo(canvas, slug, phase) {
         for(let row=0;row<3;row++) ellipsoid(body(.25+row*.13,side*.045,.107),[.040,.039,.022],coreFocus?blue:neutral,basis);
         ellipsoid(body(.36,side*.139,.03),[.044,.14,.065],coreFocus?violet:neutral,basis);
     }
+    }
     ellipsoid(pose.head,[.087,.12,.085],neutral,basis);
     ellipsoid(add(pose.head,mul(forward,.083)),[.016,.025,.025],neutral,basis);
     for(const side of [-1,1]) {
@@ -136,7 +161,7 @@ export function drawExerciseDemo(canvas, slug, phase) {
     pose.arms.forEach((arm)=>{
         ellipsoid(arm.shoulder,[.084,.087,.086],chestFocus?violet:neutral,basis);
         bone(arm.shoulder,arm.elbow,.063,.065,chestFocus?violet:neutral);
-        bone(add(mix(arm.shoulder,arm.elbow,.18),mul(forward,.032)),add(mix(arm.shoulder,arm.elbow,.82),mul(forward,.034)),.042,.034,slug==='dumbbell-curl'?blue:neutral);
+        if (!plank) bone(add(mix(arm.shoulder,arm.elbow,.18),mul(forward,.032)),add(mix(arm.shoulder,arm.elbow,.82),mul(forward,.034)),.042,.034,slug==='dumbbell-curl'?blue:neutral);
         ellipsoid(arm.elbow,[.044,.046,.043]);
         bone(arm.elbow,arm.wrist,.047,.039);
         const handAxis=unit(sub(arm.wrist,arm.elbow)),handEnd=add(arm.wrist,mul(handAxis,.085));
@@ -156,12 +181,17 @@ export function drawExerciseDemo(canvas, slug, phase) {
     });
     pose.legs.forEach((leg)=>{
         bone(leg.hip,leg.knee,.092,.097,legsFocus?blue:neutral);
-        bone(add(mix(leg.hip,leg.knee,.15),mul(forward,.044)),add(mix(leg.hip,leg.knee,.84),mul(forward,.04)),.066,.058,legsFocus?blue:neutral);
+        if (!plank) bone(add(mix(leg.hip,leg.knee,.15),mul(forward,.044)),add(mix(leg.hip,leg.knee,.84),mul(forward,.04)),.066,.058,legsFocus?blue:neutral);
         ellipsoid(leg.knee,[.058,.059,.061]);
         bone(leg.knee,leg.ankle,.059,.053);
-        bone(add(mix(leg.knee,leg.ankle,.12),[0,0,-.035]),add(mix(leg.knee,leg.ankle,.60),[0,0,-.03]),.058,.05,slug==='steady-state-run'?blue:neutral);
+        if (!plank) bone(add(mix(leg.knee,leg.ankle,.12),[0,0,-.035]),add(mix(leg.knee,leg.ankle,.60),[0,0,-.03]),.058,.05,slug==='steady-state-run'?blue:neutral);
         ellipsoid(leg.ankle,[.036,.038,.042]);
-        ellipsoid(add(leg.ankle,[0,-.035,pose.prone?.025:.07]),[.055,.045,.108],[60,78,103]);
+        if (plank) {
+            bone(leg.ankle,add(leg.ankle,[0,-.06,.13]),.047,.033);
+            ellipsoid(add(leg.ankle,[0,-.06,.13]),[.05,.026,.035]);
+        } else {
+            ellipsoid(add(leg.ankle,[0,-.035,pose.prone?.025:.07]),[.055,.045,.108],[60,78,103]);
+        }
     });
     if(slug==='bench-press') {
         bone([0,.47,-.72],[0,.47,.39],.155,.055,[38,54,77]);
@@ -175,5 +205,5 @@ export function drawExerciseDemo(canvas, slug, phase) {
     const ground=camera([0,0,.12]);
     ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(ground[0],ground[1],horizontal?105:53,9,0,0,Math.PI*2);ctx.fill();
     faces.sort((a,b)=>a.depth-b.depth);
-    for(const face of faces) {ctx.beginPath();face.points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fillStyle=face.fill;ctx.strokeStyle=face.fill;ctx.lineWidth=.35;ctx.fill();ctx.stroke();}
+    for(const face of faces) {ctx.beginPath();face.points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fillStyle=face.fill;ctx.strokeStyle=plank?'rgba(115,193,245,.28)':face.fill;ctx.lineWidth=plank?.45:.35;ctx.fill();ctx.stroke();}
 }
