@@ -1,21 +1,23 @@
 <script setup>
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, inject, onMounted, onUnmounted, ref } from 'vue';
 import gsap from 'gsap';
 import FitbakesBrand from '@/Components/FitbakesBrand.vue';
 
 const props = defineProps({ canLogin: Boolean, canRegister: Boolean });
 const inertia = usePage();
+const route = inject('route');
 const page = ref(null);
 const completedSets = ref(0);
 const entryRoute = computed(() => {
     if (inertia.props.auth?.user) return 'dashboard';
-    if (props.canRegister) return 'register';
-    return props.canLogin ? 'login' : null;
+    if (props.canLogin) return 'login';
+    return props.canRegister ? 'register' : null;
 });
 const entryLabel = computed(() =>
-    inertia.props.auth?.user ? 'Enter your System' : 'Begin your awakening',
+    inertia.props.auth?.user ? 'Open dashboard' : props.canLogin ? 'Log in to System' : 'Create account',
 );
+const localRoute = (name) => route(name, undefined, false);
 const features = [
     {
         number: '01',
@@ -76,11 +78,11 @@ onUnmounted(() => animation?.revert());
                 <a href="#awakening">Your awakening</a>
             </nav>
             <nav class="account-nav" aria-label="Account">
-                <Link v-if="inertia.props.auth?.user" :href="route('dashboard')" class="button small">Enter System <span aria-hidden="true">↗</span>
+                <Link v-if="inertia.props.auth?.user" :href="localRoute('dashboard')" class="button small">Open dashboard <span aria-hidden="true">↗</span>
                 </Link>
                 <template v-else>
-                    <Link v-if="canLogin" :href="route('login')" class="login">Log in</Link>
-                    <Link v-if="canRegister" :href="route('register')" class="button small">Join Fitbakes <span aria-hidden="true">↗</span>
+                    <Link v-if="canLogin" :href="localRoute('login')" class="login">Log in</Link>
+                    <Link v-if="canRegister" :href="localRoute('register')" class="button small">Create account <span aria-hidden="true">↗</span>
                     </Link>
                 </template>
             </nav>
@@ -91,30 +93,8 @@ onUnmounted(() => animation?.revert());
                     <div class="gate">
                     </div>
                     <img src="/images/welcome/shadow-hunter.jpg" alt="" fetchpriority="high" width="1200" height="1800" />
-                    <svg class="shadow-army" viewBox="0 0 640 300" fill="none">
-                        <defs>
-                            <g id="fitbakes-sentinel">
-                                <path d="M-18 61 Q-39 71 -39 109 L-32 150 -44 210 -20 199 -8 205 4 191 18 205 38 208 28 153 34 111 Q35 77 17 63Z" fill="#0b1026" stroke="#5f5186" stroke-width=".7"/>
-                                <path d="M-10 61 -24 66 -34 62 -38 76 -28 87 -20 82 -18 101 -14 118 -21 147 -16 171 -19 193 -26 198 -25 204 -9 204 -4 171 0 147 5 171 8 204 24 204 25 198 18 193 15 171 20 147 14 118 18 99 20 81 28 86 39 77 34 61 24 65 11 61Z" fill="#0a1021" stroke="#8170b3" stroke-width=".8"/>
-                                <path d="M-28 84 -32 111 -42 122 -44 116 -40 107 -38 82 M28 83 34 105 32 125 25 126 24 117 25 105 20 88" fill="#10182b" stroke="#8170b3" stroke-width=".8"/>
-                                <path d="M-10 60 -13 42 Q-13 28 0 24 Q14 28 13 42 L10 60 0 66Z" fill="#101729" stroke="#9080ba" stroke-width="1"/>
-                                <path d="M0 25 0 57 M-10 39 0 43 10 39 M-18 78 0 87 18 78 M-14 101 0 108 14 101 M-13 112 13 112 M-19 148 -6 152 M6 152 19 148" stroke="#5e5484" stroke-width=".9"/>
-                                <path d="M-9 44 -3 46 M9 44 3 46" stroke="#94baff" stroke-width="2"/>
-                                <path d="M-44 63 -44 206 M-48 67 -44 43 -40 67Z" fill="#15213c" stroke="#647bcb" stroke-width="1"/>
-                            </g>
-                        </defs>
-                        <g opacity=".45">
-                            <use href="#fitbakes-sentinel" transform="translate(65 60) scale(.8)"/>
-                            <use href="#fitbakes-sentinel" transform="translate(580 60) scale(.8)"/>
-                        </g>
-                        <g opacity=".8">
-                            <use href="#fitbakes-sentinel" transform="translate(140 35)"/>
-                            <use href="#fitbakes-sentinel" transform="translate(500 35)"/>
-                        </g>
-                        <use href="#fitbakes-sentinel" transform="translate(230 30) scale(1.15)"/>
-                        <use href="#fitbakes-sentinel" transform="translate(405 30) scale(1.15)"/>
-                    </svg>
-                    <span class="art-caption">THE SHADOW WITHIN / AWAKEN IT</span>
+                    <img class="shadow-army" src="/images/welcome/beru.png" alt="" width="800" height="439" fetchpriority="high" />
+                    <span class="art-caption">BERU / THE SHADOW ARMY</span>
                 </div>
                 <div class="hero-copy" data-reveal>
                     <p class="eyebrow">
@@ -125,9 +105,10 @@ onUnmounted(() => animation?.revert());
                     </h1>
                     <p class="lead">Turn real-world training into an interactive fitness journey. Take on missions. Build your strength. Watch your hunter evolve.</p>
                     <div class="actions">
-                        <Link v-if="entryRoute" :href="route(entryRoute)" class="button">{{ entryLabel }} <span aria-hidden="true">↗</span>
+                        <Link v-if="entryRoute" :href="localRoute(entryRoute)" class="button">{{ entryLabel }} <span aria-hidden="true">↗</span>
                         </Link>
-                        <a href="#mission" class="secondary-link">Experience the System <span aria-hidden="true">↓</span>
+                        <Link v-if="!inertia.props.auth?.user && canLogin && canRegister" :href="localRoute('register')" class="secondary-link">Create account <span aria-hidden="true">↗</span></Link>
+                        <a href="#mission" class="secondary-link">Try the mission demo <span aria-hidden="true">↓</span>
                         </a>
                     </div>
                     <p class="hero-note">REAL TRAINING. VISIBLE PROGRESSION. YOUR OWN STORY.</p>
@@ -238,7 +219,7 @@ onUnmounted(() => animation?.revert());
                         <em>JUST START.</em>
                     </h2>
                     <p>Choose your goal. Build your program. Let your next mission be the beginning of something stronger.</p>
-                    <Link v-if="entryRoute" :href="route(entryRoute)" class="button">{{ entryLabel }} <span aria-hidden="true">↗</span>
+                    <Link v-if="entryRoute" :href="localRoute(entryRoute)" class="button">{{ entryLabel }} <span aria-hidden="true">↗</span>
                     </Link>
                     <a v-else href="#mission" class="button">Try a mission <span aria-hidden="true">↑</span>
                     </a>
@@ -254,8 +235,8 @@ onUnmounted(() => animation?.revert());
                 <small>© {{ new Date().getFullYear() }} Fitbakes.</small>
             </div>
             <div class="credits">
-                <span>Original hunter and shadow-soldier concept inspired by Solo Leveling’s Jinwoo. Independent fitness app; no official affiliation.</span>
-                <span>Stock photography: <a href="https://www.pexels.com/photo/man-in-hood-in-smoke-on-black-background-10999002/" target="_blank" rel="noopener noreferrer">Pexels</a> / <a href="https://unsplash.com/photos/woman-standing-surrounded-by-exercise-equipment-CQfNt66ttZM" target="_blank" rel="noopener noreferrer">Unsplash</a>
+                <span>Independent fitness app. Solo Leveling character artwork © DUBU (REDICE STUDIO), Chugong, h-goon / D&C MEDIA; Netmarble & Netmarble Neo. No official affiliation.</span>
+                <span><a href="https://ch.netmarble.com/Eng/Games/Detail?bbs_code=1018&amp;post_seq=5430" target="_blank" rel="noopener noreferrer">Beru artwork: Solo Leveling: ARISE</a><br />Stock photography: <a href="https://www.pexels.com/photo/man-in-hood-in-smoke-on-black-background-10999002/" target="_blank" rel="noopener noreferrer">Pexels</a> / <a href="https://unsplash.com/photos/woman-standing-surrounded-by-exercise-equipment-CQfNt66ttZM" target="_blank" rel="noopener noreferrer">Unsplash</a>
                 </span>
             </div>
         </footer>
@@ -411,6 +392,7 @@ onUnmounted(() => animation?.revert());
     margin-top: 25px;
 }
 .hero-art {
+    pointer-events: none;
     position: absolute;
     width: 60%;
     right: -40px;
@@ -419,7 +401,7 @@ onUnmounted(() => animation?.revert());
     overflow: hidden;
     background: radial-gradient(ellipse at 60% 60%,#29204888,transparent 70%);
 }
-.hero-art>img {
+.hero-art>img:not(.shadow-army) {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -438,10 +420,12 @@ onUnmounted(() => animation?.revert());
 }
 .shadow-army {
     position: absolute;
-    width: 100%;
-    bottom: 15px;
-    left: 0;
-    filter: drop-shadow(0 0 8px #7961ff33);
+    width: 94%;
+    height: auto;
+    bottom: 60px;
+    left: 3%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 20px #7961ff33);
 }
 .art-caption {
     position: absolute;
@@ -873,7 +857,7 @@ progress::-moz-progress-bar {
         top: 230px;
         opacity: .7;
     }
-    .hero-art>img {
+    .hero-art>img:not(.shadow-army) {
         mask-image: linear-gradient(to bottom,transparent,#000 35%,transparent);
     }
     .hero-copy {
@@ -899,7 +883,7 @@ progress::-moz-progress-bar {
         padding: 15px;
     }
     .shadow-army {
-        bottom: 90px;
+        bottom: 125px;
     }
     .art-caption {
         display: none;
