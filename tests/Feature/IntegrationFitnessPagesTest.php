@@ -42,6 +42,7 @@ class IntegrationFitnessPagesTest extends TestCase
             'programs' => ['programs.index', 'Programs/Index'],
             'hunter' => ['hunter.show', 'Hunter/Show'],
             'inventory' => ['inventory.index', 'Inventory/Index'],
+            'market' => ['market.index', 'Market/Index'],
             'achievements' => ['achievements.index', 'Achievements/Index'],
             'dungeons' => ['dungeons.index', 'Dungeons/Index'],
             'health' => ['health.index', 'Health/Index'],

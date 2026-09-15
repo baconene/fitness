@@ -78,6 +78,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/inventory/{item}/equip', [HunterSystemController::class, 'equipItem'])->name('inventory.equip');
     Route::post('/inventory/{item}/unequip', [HunterSystemController::class, 'unequipItem'])->name('inventory.unequip');
 
+    // Market (coming soon)
+    Route::inertia('/market', 'Market/Index')->name('market.index');
+
     // Achievements
     Route::get('/achievements', [HunterSystemController::class, 'achievements'])->name('achievements.index');
 

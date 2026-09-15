@@ -13,7 +13,7 @@ const groups = [
     ] },
     { label: 'YOUR HUNTER', items: [
         ['Hunter profile', 'body', 'hunter.show'], ['Health', 'heart', 'health.index'], ['Progress', 'chart', 'progress.index'],
-        ['Dungeons', 'castle', 'dungeons.index'], ['Inventory', 'briefcase', 'inventory.index'], ['Achievements', 'trophy', 'achievements.index'],
+        ['Dungeons', 'castle', 'dungeons.index'], ['Inventory', 'briefcase', 'inventory.index'], ['Market', 'store', 'market.index', 'Soon'], ['Achievements', 'trophy', 'achievements.index'],
     ] },
 ];
 const currentPath = computed(() => page.url.split('?')[0]);
@@ -32,7 +32,7 @@ const active = (name) => currentPath.value === new URL(route(name), window.locat
         <nav aria-label="Main navigation" class="flex-1 overflow-y-auto px-3 py-5">
             <div v-for="group in groups" :key="group.label" class="mb-6">
                 <p class="mb-2 px-3 text-[9px] font-semibold tracking-[.2em] text-muted">{{ group.label }}</p>
-                <Link v-for="[label, icon, name] in group.items" :key="name" :href="route(name)" :aria-current="active(name) ? 'page' : undefined" class="mb-1 flex min-h-11 items-center gap-3 rounded-md border-l-2 px-3 py-2 text-[13px] transition-colors" :class="active(name) ? 'border-brand bg-brand/10 text-brand' : 'border-transparent text-muted hover:bg-surface-raised hover:text-content'" @click="$emit('close')"><Icon :name="icon" :size="18" />{{ label }}</Link>
+                <Link v-for="[label, icon, name, badge] in group.items" :key="name" :href="route(name)" :aria-current="active(name) ? 'page' : undefined" class="mb-1 flex min-h-11 items-center gap-3 rounded-md border-l-2 px-3 py-2 text-[13px] transition-colors" :class="active(name) ? 'border-brand bg-brand/10 text-brand' : 'border-transparent text-muted hover:bg-surface-raised hover:text-content'" @click="$emit('close')"><Icon :name="icon" :size="18" />{{ label }}<span v-if="badge" class="ml-auto rounded-full border border-brand/30 bg-brand/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[.14em] text-brand">{{ badge }}</span></Link>
             </div>
         </nav>
         <div class="border-t border-edge/15 p-4 text-xs">
