@@ -4,6 +4,7 @@ import { router, useForm } from '@inertiajs/vue3';
 import HunterLayout from '@/Layouts/HunterLayout.vue';
 import Icon from '@/Components/Icon.vue';
 import Pagination from '@/Components/Pagination.vue';
+import ExercisePicker from '@/Components/ExercisePicker.vue';
 
 const props = defineProps({
     workouts: { type: Object, required: true },
@@ -23,10 +24,21 @@ const form = useForm({
     exercises: [{ exercise_id: '', sets: 3 }],
 });
 
+/** Index of the exercise row the picker is choosing for, or null when closed. */
+const pickerRowIndex = ref(null);
+
+const exerciseById = computed(() => new Map(props.exercises.map((exercise) => [exercise.id, exercise])));
+
 const addRow = () => {
     if (form.exercises.length < 20) {
         form.exercises.push({ exercise_id: '', sets: 3 });
+        pickerRowIndex.value = form.exercises.length - 1;
     }
+};
+
+const chooseExercise = (exercise) => {
+    form.exercises[pickerRowIndex.value].exercise_id = exercise.id;
+    pickerRowIndex.value = null;
 };
 
 const removeRow = (index) => {
@@ -36,13 +48,10 @@ const removeRow = (index) => {
 };
 
 /** An exercise may only be chosen once; the server enforces `distinct` too. */
-const availableFor = (index) => {
-    const taken = form.exercises
+const takenIdsFor = (index) =>
+    form.exercises
         .filter((row, rowIndex) => rowIndex !== index && row.exercise_id)
         .map((row) => Number(row.exercise_id));
-
-    return props.exercises.filter((exercise) => !taken.includes(exercise.id));
-};
 
 const canSubmit = computed(
     () => form.name.trim().length > 0 && form.exercises.some((row) => row.exercise_id)
@@ -131,12 +140,16 @@ const STATUS_LABEL = {
                     <span class="ui-label">Exercises</span>
                     <ul class="space-y-2">
                         <li v-for="(row, index) in form.exercises" :key="index" class="flex items-center gap-2">
-                            <select v-model="row.exercise_id" class="ui-input min-w-0 flex-1">
-                                <option value="">Choose an exercise</option>
-                                <option v-for="exercise in availableFor(index)" :key="exercise.id" :value="exercise.id">
-                                    {{ exercise.name }}
-                                </option>
-                            </select>
+                            <button
+                                type="button"
+                                class="ui-input flex min-w-0 flex-1 items-center justify-between gap-2 text-left"
+                                @click="pickerRowIndex = index"
+                            >
+                                <span class="truncate" :class="row.exercise_id ? 'text-content' : 'text-muted'">
+                                    {{ exerciseById.get(Number(row.exercise_id))?.name ?? 'Choose an exercise' }}
+                                </span>
+                                <Icon name="chevronDown" :size="14" class="shrink-0 text-muted" />
+                            </button>
                             <label class="shrink-0">
                                 <span class="sr-only">Sets</span>
                                 <input
@@ -175,6 +188,15 @@ const STATUS_LABEL = {
                     {{ form.processing ? 'Saving' : form.scheduled_date ? 'Schedule mission' : 'Start mission now' }}
                 </button>
             </form>
+
+            <ExercisePicker
+                :show="pickerRowIndex !== null"
+                :exercises="exercises"
+                :excluded-ids="pickerRowIndex === null ? [] : takenIdsFor(pickerRowIndex)"
+                :selected-id="pickerRowIndex === null ? null : form.exercises[pickerRowIndex]?.exercise_id || null"
+                @select="chooseExercise"
+                @close="pickerRowIndex = null"
+            />
         </section>
 
         <ul v-if="workouts.data.length" class="grid gap-3 lg:grid-cols-2">

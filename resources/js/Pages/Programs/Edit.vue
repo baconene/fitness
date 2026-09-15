@@ -1,8 +1,9 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import HunterLayout from '@/Layouts/HunterLayout.vue';
 import Icon from '@/Components/Icon.vue';
+import ExercisePicker from '@/Components/ExercisePicker.vue';
 
 const props = defineProps({
     program: { type: Object, default: null },
@@ -96,7 +97,20 @@ const toggleRestDay = (day) => {
     day.exercises = day.is_rest_day ? [] : [blankExercise()];
 };
 
-const addExercise = (day) => day.exercises.push(blankExercise());
+/** The program exercise row the picker is choosing for, or null when closed. */
+const pickerTarget = ref(null);
+
+const exerciseById = computed(() => new Map(props.exercises.map((exercise) => [exercise.id, exercise])));
+
+const chooseExercise = (exercise) => {
+    pickerTarget.value.exercise_id = exercise.id;
+    pickerTarget.value = null;
+};
+
+const addExercise = (day) => {
+    day.exercises.push(blankExercise());
+    pickerTarget.value = day.exercises[day.exercises.length - 1];
+};
 
 const removeExercise = (day, index) => day.exercises.splice(index, 1);
 
@@ -273,14 +287,14 @@ const submit = () => {
                                 class="rounded-md border border-edge/10 bg-canvas/40 p-3"
                             >
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <select
-                                        v-model.number="exercise.exercise_id"
-                                        class="min-w-0 flex-1 rounded-md border border-edge/20 bg-canvas px-3 py-2 text-[13px] text-content focus:border-brand"
+                                    <button
+                                        type="button"
+                                        class="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-md border border-edge/20 bg-canvas px-3 py-2 text-left text-[13px] text-content hover:border-brand/50"
+                                        @click="pickerTarget = exercise"
                                     >
-                                        <option v-for="option in exercises" :key="option.id" :value="option.id">
-                                            {{ option.name }}
-                                        </option>
-                                    </select>
+                                        <span class="truncate">{{ exerciseById.get(exercise.exercise_id)?.name ?? 'Choose an exercise' }}</span>
+                                        <span class="shrink-0 text-[11px] text-brand">Change</span>
+                                    </button>
 
                                     <div class="flex items-center gap-1">
                                         <button
@@ -397,5 +411,13 @@ const submit = () => {
                 <span v-if="form.isDirty" class="text-[12px] text-muted">Unsaved changes</span>
             </div>
         </form>
+
+        <ExercisePicker
+            :show="pickerTarget !== null"
+            :exercises="exercises"
+            :selected-id="pickerTarget?.exercise_id ?? null"
+            @select="chooseExercise"
+            @close="pickerTarget = null"
+        />
     </HunterLayout>
 </template>

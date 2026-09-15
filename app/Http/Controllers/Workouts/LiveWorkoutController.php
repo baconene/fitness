@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Workouts;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CompleteWorkoutSetRequest;
-use App\Models\Exercise;
 use App\Models\PersonalRecord;
 use App\Models\Workout;
 use App\Models\WorkoutSet;
+use App\Services\ExerciseCatalogService;
 use App\Services\LiveMissionService;
 use App\Services\WorkoutService;
 use Illuminate\Http\JsonResponse;
@@ -21,7 +21,7 @@ class LiveWorkoutController extends Controller
 {
     public function __construct(private WorkoutService $workoutService, private LiveMissionService $liveMissionService) {}
 
-    public function show(Workout $workout): Response|RedirectResponse
+    public function show(Workout $workout, ExerciseCatalogService $catalog): Response|RedirectResponse
     {
         Gate::authorize('view', $workout);
 
@@ -59,8 +59,7 @@ class LiveWorkoutController extends Controller
             ...$this->liveMissionService->forWorkout($workout),
             'workout' => $workout,
             'currentExerciseIndex' => $currentExerciseIndex === false ? 0 : $currentExerciseIndex,
-            'exerciseOptions' => Exercise::where('is_active', true)->orderBy('name')
-                ->get(['id', 'name', 'exercise_type', 'primary_muscle']),
+            'exerciseOptions' => $catalog->activeExercises(),
         ]);
     }
 

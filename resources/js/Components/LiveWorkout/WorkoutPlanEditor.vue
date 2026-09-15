@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import Icon from '@/Components/Icon.vue';
+import ExercisePicker from '@/Components/ExercisePicker.vue';
 
 const props = defineProps({
     workoutId: { type: Number, required: true },
@@ -14,6 +15,7 @@ const props = defineProps({
 });
 
 const isAdding = ref(false);
+const isPickerOpen = ref(false);
 const pending = ref(false);
 const errorMessage = ref('');
 
@@ -24,11 +26,21 @@ const usedIds = computed(() => new Set(props.exercises.map((exercise) => exercis
 
 const availableOptions = computed(() => props.exerciseOptions.filter((option) => !usedIds.value.has(option.id)));
 
+const exerciseById = computed(() => new Map(props.exerciseOptions.map((option) => [option.id, option])));
+
 const openPicker = () => {
-    selectedExerciseId.value = availableOptions.value[0]?.id ?? null;
-    selectedSets.value = 3;
     errorMessage.value = '';
+    isPickerOpen.value = true;
+};
+
+const chooseExercise = (exercise) => {
+    if (!isAdding.value) {
+        selectedSets.value = 3;
+    }
+
+    selectedExerciseId.value = exercise.id;
     isAdding.value = true;
+    isPickerOpen.value = false;
 };
 
 const addExercise = () => {
@@ -137,17 +149,17 @@ const removeExercise = (exercise) => {
             </button>
 
             <div v-else class="flex flex-wrap items-end gap-2 rounded-md border border-edge/15 p-3">
-                <label class="min-w-[160px] flex-1">
+                <div class="min-w-[160px] flex-1">
                     <span class="mb-1 block text-[11px] text-muted">Exercise</span>
-                    <select
-                        v-model.number="selectedExerciseId"
-                        class="w-full rounded-md border border-edge/20 bg-canvas px-3 py-2 text-[13px] text-content focus:border-brand"
+                    <button
+                        type="button"
+                        class="flex w-full items-center justify-between gap-2 rounded-md border border-edge/20 bg-canvas px-3 py-2 text-left text-[13px] text-content hover:border-brand/50"
+                        @click="openPicker"
                     >
-                        <option v-for="option in availableOptions" :key="option.id" :value="option.id">
-                            {{ option.name }}
-                        </option>
-                    </select>
-                </label>
+                        <span class="truncate">{{ exerciseById.get(selectedExerciseId)?.name ?? 'Choose an exercise' }}</span>
+                        <span class="shrink-0 text-[11px] text-brand">Change</span>
+                    </button>
+                </div>
 
                 <label class="w-20">
                     <span class="mb-1 block text-[11px] text-muted">Sets</span>
@@ -167,6 +179,15 @@ const removeExercise = (exercise) => {
                     Cancel
                 </button>
             </div>
+
+            <ExercisePicker
+                :show="isPickerOpen"
+                :exercises="exerciseOptions"
+                :excluded-ids="[...usedIds]"
+                :selected-id="selectedExerciseId"
+                @select="chooseExercise"
+                @close="isPickerOpen = false"
+            />
         </template>
     </div>
 </template>

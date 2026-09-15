@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Exercise;
 use App\Models\User;
 use App\Models\UserQuest;
 use App\Models\Workout;
+use App\Services\ExerciseCatalogService;
 use App\Services\ExperienceService;
 use App\Services\HunterProgressionService;
 use App\Services\QuestGenerationService;
@@ -21,7 +21,7 @@ class MissionsController extends Controller
 {
     public function __construct(private QuestGenerationService $quests) {}
 
-    public function index(Request $request): Response|RedirectResponse
+    public function index(Request $request, ExerciseCatalogService $catalog): Response|RedirectResponse
     {
         $user = $request->user();
         if (! $user->hunterProfile) {
@@ -41,8 +41,6 @@ class MissionsController extends Controller
             'questType' => $type,
             'activeCount' => (clone $missions)->where('status', 'Active')->count(),
             'quests' => (clone $missions)->with('questTemplate', 'progress')->orderByDesc('assigned_date')->orderByDesc('id')->paginate(24)->withQueryString()->through(function (UserQuest $quest): array {
-                $metric = strtolower(str_replace('_', '', $quest->questTemplate->target_metric));
-
                 return [
                     'id' => $quest->id,
                     'name' => $quest->questTemplate->name,
@@ -60,8 +58,7 @@ class MissionsController extends Controller
             'today' => now($user->timezone())->toDateString(),
             'completedCount' => (clone $missions)->where('status', 'Completed')->count(),
             'upcomingWorkouts' => $this->upcomingWorkouts($user),
-            'exerciseOptions' => Exercise::where('is_active', true)->orderBy('name')
-                ->get(['id', 'name', 'exercise_type', 'primary_muscle']),
+            'exerciseOptions' => $catalog->activeExercises(),
         ]);
     }
 

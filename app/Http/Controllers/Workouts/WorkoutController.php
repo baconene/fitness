@@ -10,6 +10,7 @@ use App\Models\Exercise;
 use App\Models\ProgramDay;
 use App\Models\Workout;
 use App\Models\WorkoutExercise;
+use App\Services\ExerciseCatalogService;
 use App\Services\WorkoutService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,11 +22,11 @@ class WorkoutController extends Controller
 {
     public function __construct(private WorkoutService $workoutService) {}
 
-    public function index(Request $request): Response
+    public function index(Request $request, ExerciseCatalogService $catalog): Response
     {
         return Inertia::render('Workouts/Index', [
             'workouts' => $request->user()->workouts()->with('workoutExercises.exercise', 'workoutExercises.workoutSets')->latest()->paginate(12),
-            'exercises' => Exercise::where('is_active', true)->orderBy('name')->get(['id', 'name', 'exercise_type', 'primary_muscle', 'equipment_required', 'difficulty']),
+            'exercises' => $catalog->activeExercises(),
             'activeWorkout' => $request->user()->workouts()->where('status', 'in_progress')->latest()->first(['id', 'name']),
         ]);
     }

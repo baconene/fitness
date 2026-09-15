@@ -5,15 +5,14 @@ namespace App\Http\Controllers\Workouts;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTrainingProgramRequest;
 use App\Http\Requests\UpdateTrainingProgramRequest;
-use App\Models\Exercise;
 use App\Models\TrainingProgram;
 use App\Models\UserProgramEnrollment;
+use App\Services\ExerciseCatalogService;
 use App\Services\ProgramBuilderService;
 use App\Services\WorkoutService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -36,13 +35,13 @@ class ProgramController extends Controller
         ]);
     }
 
-    public function create(Request $request): Response
+    public function create(Request $request, ExerciseCatalogService $catalog): Response
     {
         Gate::authorize('create', TrainingProgram::class);
 
         return Inertia::render('Programs/Edit', [
             'program' => null,
-            'exercises' => $this->exerciseOptions(),
+            'exercises' => $catalog->activeExercises(),
         ]);
     }
 
@@ -53,14 +52,14 @@ class ProgramController extends Controller
         return to_route('programs.index')->with('success', "\"{$program->name}\" is ready. Enroll when you want the missions scheduled.");
     }
 
-    public function edit(Request $request, TrainingProgram $program): Response
+    public function edit(Request $request, TrainingProgram $program, ExerciseCatalogService $catalog): Response
     {
         Gate::authorize('update', $program);
         $program->load('programWeeks.programDays.programExercises');
 
         return Inertia::render('Programs/Edit', [
             'program' => $program,
-            'exercises' => $this->exerciseOptions(),
+            'exercises' => $catalog->activeExercises(),
         ]);
     }
 
@@ -85,15 +84,6 @@ class ProgramController extends Controller
         $program->delete();
 
         return to_route('programs.index')->with('success', 'Program deleted.');
-    }
-
-    /**
-     * @return Collection<int, Exercise>
-     */
-    private function exerciseOptions()
-    {
-        return Exercise::where('is_active', true)->orderBy('name')
-            ->get(['id', 'name', 'exercise_type', 'primary_muscle', 'equipment_required', 'difficulty']);
     }
 
     public function enroll(Request $request, TrainingProgram $program, WorkoutService $workoutService): RedirectResponse
