@@ -202,8 +202,26 @@ export const focusFor = (slug) => {
 export const loadFor = (slug) => ARCHETYPES[slug]?.load ?? null;
 
 /** Coaching line for an archetype-driven exercise. */
+const MOVEMENT_CUES = {
+    'ab-wheel-rollout': 'knees grounded, roll the wheel forward with a braced trunk, then return under control.',
+    'battle-ropes': 'hold a soft-knee stance and alternate your arms to send waves down both ropes.',
+    'bicycle-crunch': 'alternate the bent knee and opposite shoulder while extending the other leg; keep your hands light at your temples.',
+    'bird-dog': 'from hands and knees, extend opposite arm and leg, return, then switch sides with your trunk steady.',
+    'box-jump': 'load your hips, jump onto the box, land softly, stand tall, then step down to reset.',
+    'broad-jump': 'swing your arms, jump forward, land softly on both feet, then reset your stance.',
+    'burpee': 'squat down, move to plank, lower and press up, bring your feet in, then jump and land softly.',
+    'cable-crossover': 'stand between the pulleys and bring the handles together in front of your chest with soft elbows.',
+    'face-pull': 'pull the cable handles toward your face, opening your elbows, then return under control.',
+    'straight-arm-pulldown': 'keep a slight elbow bend as you draw the cable down toward your thighs.',
+    'triceps-pushdown': 'keep your elbows beside your ribs and extend them to press the cable handles down.',
+    'pallof-press': 'stand sideways to the cable and press forward without letting your torso rotate.',
+    'cable-woodchop': 'draw the high cable diagonally across your body with control, then return.',
+};
+
 export const archetypeLabel = (slug, name) => {
     const spec = ARCHETYPES[slug];
+
+    if (Object.hasOwn(MOVEMENT_CUES, slug)) return `${name}: ${MOVEMENT_CUES[slug]}`;
 
     return spec ? (LABELS[spec.motion] ?? '%s: move with control through the full range.').replace('%s', name) : null;
 };

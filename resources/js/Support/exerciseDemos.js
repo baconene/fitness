@@ -9,6 +9,7 @@
  * ExerciseSeeder. Unlisted exercises display an explicit unavailable state.
  */
 import { archetypeLabel } from './exerciseArchetypes.js';
+import { CORRECTED_DEMOS } from './exerciseCorrections.js';
 
 export const EXERCISE_DEMOS = {
     'bench-press': {
@@ -101,7 +102,7 @@ export const EXERCISE_DEMOS = {
 export const demoFor = (slug, name = null) => {
     const key = typeof slug === 'string' ? slug.toLowerCase().trim().replaceAll('_', '-').replaceAll(' ', '-') : '';
     // Bump when replacing public assets so returning browsers fetch the new artwork.
-    const artworkVersion = key === 'incline-treadmill-walk' ? 'treadmill-4' : 'wireframe-3';
+    const artworkVersion = CORRECTED_DEMOS.includes(key) ? 'equipment-5' : key === 'incline-treadmill-walk' ? 'treadmill-4' : 'wireframe-3';
 
     const readableName = name ?? key.replaceAll('-', ' ').replace(/^./, (c) => c.toUpperCase());
     const hand = Object.hasOwn(EXERCISE_DEMOS, key) ? EXERCISE_DEMOS[key] : null;

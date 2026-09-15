@@ -1,5 +1,6 @@
 /** Original articulated mannequin used to render the exercise GIFs and posters. */
 import { archetypeFor, focusFor, loadFor } from './exerciseArchetypes.js';
+import { correctExercisePose, exerciseEquipment } from './exerciseCorrections.js';
 
 const add = (a, b) => a.map((v, i) => v + b[i]);
 const sub = (a, b) => a.map((v, i) => v - b[i]);
@@ -93,7 +94,7 @@ export function exercisePose(slug, phase) {
     } else if(archetypeFor(slug)) {
         archetypePose(pose, archetypeFor(slug), t, phase);
     }
-    return pose;
+    return correctExercisePose(pose,slug,phase);
 }
 
 /** Segment lengths shared by every archetype, in the same units as the base pose. */
@@ -542,7 +543,7 @@ export function exerciseCamera(slug) {
     if (cameraFrames.has(slug)) return cameraFrames.get(slug);
     const initial = exercisePose(slug, 0);
     const horizontal = slug === 'bench-press' || initial.prone || initial.horizontal;
-    const yaw = slug==='incline-treadmill-walk' ? -1.05 : horizontal ? -1.02 : .48;
+    const yaw = ['incline-treadmill-walk','box-jump','broad-jump','burpee','battle-ropes'].includes(slug) ? -1.05 : horizontal ? -1.02 : .48;
     const pitch = horizontal ? .24 : .12;
     const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
     const project = ([x,y,z]) => [x*cy-z*sy, -y*cp+(x*sy+z*cy)*sp, (x*sy+z*cy)*cp+y*sp];
@@ -551,6 +552,7 @@ export function exerciseCamera(slug) {
         const pose = exercisePose(slug, frame/32);
         const points = [pose.head, pose.neck, pose.pelvis, ...pose.arms.flatMap(Object.values), ...pose.legs.flatMap(Object.values)];
         if(slug==='incline-treadmill-walk') points.push([-.5,.02,-.85],[.5,1.44,1]);
+        for(const item of exerciseEquipment(pose,slug,frame/32)) points.push(...(item.points??[item.center]));
         for (const point of points) {
             const [x,y] = project(point);
             bounds[0] = Math.min(bounds[0], x-.23);
@@ -606,6 +608,13 @@ export function drawExerciseDemo(canvas, slug, phase) {
         const right=unit(cross(axis,reference)),forward=unit(cross(right,axis));
         ellipsoid(mix(a,b,.5),[width,Math.hypot(...sub(b,a))*.56,depth],color,[right,axis,forward]);
     };
+    for(const item of exerciseEquipment(pose,slug,phase)) {
+        if(item.type==='ellipsoid') {ellipsoid(item.center,item.radii,item.color);continue;}
+        const points=item.points.map(camera);
+        if(item.type==='line') {
+            for(let i=1;i<points.length;i++) faces.push({points:[points[i-1],points[i]],depth:(points[i-1][2]+points[i][2])/2,line:true,stroke:item.color,width:item.width});
+        } else faces.push({points,depth:item.role==='ground'?-Infinity:points.reduce((sum,p)=>sum+p[2],0)/points.length,fill:item.color,stroke:'#54738d'});
+    }
     if(slug==='incline-treadmill-walk') {
         const panel=(points,fill,stroke='#344f68')=>{
             const projected=points.map(camera);
@@ -671,7 +680,9 @@ export function drawExerciseDemo(canvas, slug, phase) {
         ellipsoid(arm.elbow,[.044,.046,.043]);
         bone(arm.elbow,arm.wrist,.047,.039);
         const handAxis=unit(sub(arm.wrist,arm.elbow)),handEnd=add(arm.wrist,mul(handAxis,.085));
-        if (slug==='bench-press' || slug==='dumbbell-curl' || slug==='incline-treadmill-walk' || loadFor(slug)) {
+        if (slug==='bird-dog' && arm.wrist[1]<.12) {
+            bone(arm.wrist,add(arm.wrist,[0,-.025,-.09]),.033,.018);
+        } else if (['bench-press','dumbbell-curl','incline-treadmill-walk','ab-wheel-rollout','battle-ropes'].includes(slug) || loadFor(slug)) {
             ellipsoid(arm.wrist,[.043,.039,.038]);
             ellipsoid(add(arm.wrist,[.027,.017,.012]),[.014,.025,.018]);
         } else {
@@ -719,5 +730,5 @@ export function drawExerciseDemo(canvas, slug, phase) {
     const ground=camera([0,0,.12]);
     ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(ground[0],ground[1],horizontal?105:53,9,0,0,Math.PI*2);ctx.fill();
     faces.sort((a,b)=>a.depth-b.depth);
-    for(const face of faces) {ctx.beginPath();face.points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fillStyle=face.fill;ctx.strokeStyle=face.stroke??'rgba(115,193,245,.20)';ctx.lineWidth=.4;ctx.fill();ctx.stroke();}
+    for(const face of faces) {ctx.beginPath();face.points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));if(!face.line){ctx.closePath();ctx.fillStyle=face.fill;ctx.fill();}ctx.strokeStyle=face.stroke??'rgba(115,193,245,.20)';ctx.lineWidth=face.width??.4;ctx.lineCap='round';ctx.stroke();}
 }
