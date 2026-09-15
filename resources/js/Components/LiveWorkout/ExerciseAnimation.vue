@@ -31,8 +31,8 @@ watch(() => props.slug, () => { failed.value = false; posterFailed.value = false
             <span v-else class="flex min-h-11 items-center text-xs text-muted">{{ pose ? 'Still preview' : 'No demo yet' }}</span>
         </div>
         <div class="flex aspect-[5/3] max-h-64 items-center justify-center overflow-hidden bg-[#080e1c]">
-            <img v-if="pose && playing && !failed" :key="pose.slug" :src="pose.gif" :alt="name + ' movement demonstration'" width="400" height="240" decoding="async" class="h-full w-full object-contain" @error="failed = true" />
-            <img v-else-if="pose && !posterFailed" :key="pose.slug + '-poster'" :src="pose.poster" :alt="name + ' starting position'" width="400" height="240" decoding="async" class="h-full w-full object-contain" @error="posterFailed = true" />
+            <img v-if="pose && playing && !failed" :key="pose.slug" :src="pose.gif" :alt="name + ' movement demonstration'" width="400" height="240" loading="lazy" decoding="async" class="h-full w-full object-contain" @error="failed = true" />
+            <img v-else-if="pose && !posterFailed" :key="pose.slug + '-poster'" :src="pose.poster" :alt="name + ' starting position'" width="400" height="240" loading="lazy" decoding="async" class="h-full w-full object-contain" @error="posterFailed = true" />
             <p v-else class="max-w-xs px-6 text-center text-sm leading-6 text-muted">A movement demonstration for {{ name }} is not available yet. Check the exercise guidance below.</p>
         </div>
         <figcaption v-if="pose && !compact" class="border-t border-edge/15 px-4 py-3 text-xs leading-6 text-muted">{{ pose.label }}</figcaption>

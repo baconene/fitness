@@ -111,10 +111,12 @@ watch(
                 </button>
             </div>
 
-            <ul
-                v-if="filtered.length"
-                class="mt-4 grid min-h-0 flex-1 grid-cols-1 content-start gap-3 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3"
-            >
+            <!--
+                Scroll on a wrapper, not the grid: a height-constrained grid shrinks
+                overflow-hidden cards to nothing.
+            -->
+            <div v-if="filtered.length" class="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
+            <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <li
                     v-for="exercise in filtered"
                     :key="exercise.id"
@@ -190,6 +192,7 @@ watch(
                     </div>
                 </li>
             </ul>
+            </div>
 
             <p v-else class="mt-4 rounded-md border border-dashed border-edge/25 p-8 text-center text-sm text-muted">
                 No exercises match that search.
