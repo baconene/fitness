@@ -2,16 +2,16 @@
 export const readable = (value) => String(value ?? '').replaceAll('_', ' ');
 
 /**
- * Exercise types present in a list, alphabetically, with how many exercises each has.
+ * Distinct values, alphabetically, with readable labels and how often each occurs.
  *
  * @returns {Array<{ value: string, label: string, count: number }>}
  */
-export const exerciseTypesIn = (exercises) => {
+const countedOptions = (values) => {
     const counts = new Map();
 
-    for (const exercise of exercises) {
-        if (exercise.type) {
-            counts.set(exercise.type, (counts.get(exercise.type) ?? 0) + 1);
+    for (const value of values) {
+        if (value) {
+            counts.set(value, (counts.get(value) ?? 0) + 1);
         }
     }
 
@@ -24,11 +24,18 @@ export const exerciseTypesIn = (exercises) => {
         }));
 };
 
+/** Exercise types present in a list, with how many exercises each has. */
+export const exerciseTypesIn = (exercises) => countedOptions(exercises.map((exercise) => exercise.type));
+
+/** Primary target muscles present in a list, with how many exercises work each. */
+export const musclesIn = (exercises) =>
+    countedOptions(exercises.flatMap((exercise) => [...new Set(exercise.primaryMuscles ?? [])]));
+
 /**
- * Narrows the catalogue by exercise type and a free-text search over the name,
- * category, muscles and equipment. Excluded ids are never offered.
+ * Narrows the catalogue by exercise type, primary target muscle and a free-text
+ * search over the name, category, muscles and equipment. Excluded ids are never offered.
  */
-export const filterExercises = (exercises, { search = '', type = 'all', excludedIds = [] } = {}) => {
+export const filterExercises = (exercises, { search = '', type = 'all', muscle = 'all', excludedIds = [] } = {}) => {
     const term = readable(search).trim().toLowerCase();
     const excluded = new Set(excludedIds.map(Number));
 
@@ -38,6 +45,10 @@ export const filterExercises = (exercises, { search = '', type = 'all', excluded
         }
 
         if (type !== 'all' && exercise.type !== type) {
+            return false;
+        }
+
+        if (muscle !== 'all' && !(exercise.primaryMuscles ?? []).includes(muscle)) {
             return false;
         }
 
