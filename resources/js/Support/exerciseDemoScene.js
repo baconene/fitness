@@ -1,6 +1,7 @@
 /** Original articulated mannequin used to render the exercise GIFs and posters. */
 import { archetypeFor, focusFor, loadFor } from './exerciseArchetypes.js';
 import { correctExercisePose, exerciseEquipment } from './exerciseCorrections.js';
+import { FORM_DEMOS } from './exerciseFormCorrections.js';
 
 const add = (a, b) => a.map((v, i) => v + b[i]);
 const sub = (a, b) => a.map((v, i) => v - b[i]);
@@ -543,7 +544,7 @@ export function exerciseCamera(slug) {
     if (cameraFrames.has(slug)) return cameraFrames.get(slug);
     const initial = exercisePose(slug, 0);
     const horizontal = slug === 'bench-press' || initial.prone || initial.horizontal;
-    const yaw = ['incline-treadmill-walk','box-jump','broad-jump','burpee','battle-ropes'].includes(slug) ? -1.05 : horizontal ? -1.02 : .48;
+    const yaw = ['incline-treadmill-walk','box-jump','broad-jump','burpee','battle-ropes','calf-raise','cycling','elliptical-trainer','front-raise','hanging-leg-raise'].includes(slug) ? -1.05 : horizontal ? -1.02 : .48;
     const pitch = horizontal ? .24 : .12;
     const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
     const project = ([x,y,z]) => [x*cy-z*sy, -y*cp+(x*sy+z*cy)*sp, (x*sy+z*cy)*cp+y*sp];
@@ -639,7 +640,7 @@ export function drawExerciseDemo(canvas, slug, phase) {
     }
     const up=unit(sub(pose.neck,pose.pelvis)),right=[1,0,0];
     const forward=mul(unit(cross(right,up)),pose.prone?-1:1),basis=[right,up,forward];
-    const body=(height,x,depth)=>add(mix(pose.pelvis,pose.neck,height),add(mul(right,x),mul(forward,depth)));
+    const body=(height,x,depth)=>add(add(mix(pose.pelvis,pose.neck,height),[0,(pose.spineArch??0)*Math.sin(Math.PI*height),0]),add(mul(right,x),mul(forward,depth)));
     // Hand-authored slugs keep their original tinting; archetypes derive it.
     const focus=focusFor(slug);
     const chestFocus=['bench-press','push-up'].includes(slug)||focus==='chest'||focus==='arms';
@@ -680,9 +681,11 @@ export function drawExerciseDemo(canvas, slug, phase) {
         ellipsoid(arm.elbow,[.044,.046,.043]);
         bone(arm.elbow,arm.wrist,.047,.039);
         const handAxis=unit(sub(arm.wrist,arm.elbow)),handEnd=add(arm.wrist,mul(handAxis,.085));
-        if (slug==='bird-dog' && arm.wrist[1]<.12) {
+        if (['bird-dog','cat-cow','clap-push-up','close-grip-push-up'].includes(slug) && arm.wrist[1]<.12) {
             bone(arm.wrist,add(arm.wrist,[0,-.025,-.09]),.033,.018);
-        } else if (['bench-press','dumbbell-curl','incline-treadmill-walk','ab-wheel-rollout','battle-ropes'].includes(slug) || loadFor(slug)) {
+        } else if(slug==='clap-push-up') {
+            ellipsoid(arm.wrist,[.018,.05,.03]);
+        } else if (['bench-press','dumbbell-curl','incline-treadmill-walk','ab-wheel-rollout','battle-ropes'].includes(slug) || (FORM_DEMOS.includes(slug) && !['dead-bug','cat-cow'].includes(slug)) || loadFor(slug)) {
             ellipsoid(arm.wrist,[.043,.039,.038]);
             ellipsoid(add(arm.wrist,[.027,.017,.012]),[.014,.025,.018]);
         } else {
@@ -691,13 +694,13 @@ export function drawExerciseDemo(canvas, slug, phase) {
                 const at=add(handEnd,[(finger-1.5)*.014,0,0]);bone(at,add(at,mul(handAxis,.037)),.007,.008);
             }
         }
-        if(slug==='dumbbell-curl'||loadFor(slug)==='dumbbell') {
+        if(!FORM_DEMOS.includes(slug) && (slug==='dumbbell-curl'||loadFor(slug)==='dumbbell')) {
             const a=add(arm.wrist,[-.095,0,0]),b=add(arm.wrist,[.095,0,0]);bone(a,b,.015,.015,[150,168,190]);
             for(const point of [a,b])ellipsoid(point,[.027,.068,.068],[77,92,119]);
         }
     });
     // A barbell spans both hands, so it is drawn once rather than per arm.
-    if(loadFor(slug)==='barbell' && pose.arms.length===2) {
+    if(!FORM_DEMOS.includes(slug) && loadFor(slug)==='barbell' && pose.arms.length===2) {
         const [left,right]=pose.arms.map((arm)=>arm.wrist);
         const axis=unit(sub(right,left)), outer=.30;
         const a=sub(left,mul(axis,outer)), b=add(right,mul(axis,outer));
@@ -711,7 +714,9 @@ export function drawExerciseDemo(canvas, slug, phase) {
         ellipsoid(leg.knee,[.058,.059,.061]);
         bone(leg.knee,leg.ankle,.059,.053);
         ellipsoid(leg.ankle,[.036,.038,.042]);
-        if (plank) {
+        if(slug==='calf-raise') {
+            bone(leg.ankle,[leg.ankle[0],.04,.12],.048,.025);
+        } else if (plank) {
             bone(leg.ankle,add(leg.ankle,[0,-.06,.13]),.047,.033);
             ellipsoid(add(leg.ankle,[0,-.06,.13]),[.05,.026,.035]);
         } else {

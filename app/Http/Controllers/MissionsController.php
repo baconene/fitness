@@ -9,6 +9,7 @@ use App\Models\Workout;
 use App\Services\ExperienceService;
 use App\Services\HunterProgressionService;
 use App\Services\QuestGenerationService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -31,8 +32,15 @@ class MissionsController extends Controller
         $this->quests->generateWeeklyQuests($user);
         $this->quests->synchronizeProgress($user);
 
+        $type = in_array($request->query('type'), ['daily', 'weekly'], true) ? $request->query('type') : 'all';
+        $missions = $user->userQuests()->getQuery()->when($type !== 'all', fn (Builder $query): Builder => $query->whereHas(
+            'questTemplate', fn (Builder $template): Builder => $template->where('quest_type', ucfirst($type)),
+        ));
+
         return Inertia::render('Missions/Index', [
-            'quests' => $user->userQuests()->with('questTemplate', 'progress')->orderByDesc('assigned_date')->orderByDesc('id')->paginate(24)->through(function (UserQuest $quest): array {
+            'questType' => $type,
+            'activeCount' => (clone $missions)->where('status', 'Active')->count(),
+            'quests' => (clone $missions)->with('questTemplate', 'progress')->orderByDesc('assigned_date')->orderByDesc('id')->paginate(24)->withQueryString()->through(function (UserQuest $quest): array {
                 $metric = strtolower(str_replace('_', '', $quest->questTemplate->target_metric));
 
                 return [
@@ -51,7 +59,7 @@ class MissionsController extends Controller
                 ];
             }),
             'today' => now($user->timezone())->toDateString(),
-            'completedCount' => $user->userQuests()->where('status', 'Completed')->count(),
+            'completedCount' => (clone $missions)->where('status', 'Completed')->count(),
             'upcomingWorkouts' => $this->upcomingWorkouts($user),
             'exerciseOptions' => Exercise::where('is_active', true)->orderBy('name')
                 ->get(['id', 'name', 'exercise_type', 'primary_muscle']),

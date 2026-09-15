@@ -1,4 +1,5 @@
 /** Authored movements and equipment for exercises that cannot share a generic cycle. */
+import { refineExerciseForm, formEquipment } from './exerciseFormCorrections.js';
 export const CABLE_DEMOS = ['cable-crossover', 'seated-cable-row', 'face-pull', 'straight-arm-pulldown', 'cable-curl', 'triceps-pushdown', 'pallof-press', 'cable-woodchop', 'lat-pulldown'];
 export const CORRECTED_DEMOS = ['ab-wheel-rollout', 'battle-ropes', 'bicycle-crunch', 'bird-dog', 'box-jump', 'broad-jump', 'burpee', ...CABLE_DEMOS];
 const add = (a,b) => a.map((v,i)=>v+b[i]);
@@ -110,7 +111,7 @@ export function correctExercisePose(pose,slug,phase) {
             return {shoulder,elbow,wrist};
         });
     }
-    return pose;
+    return refineExerciseForm(pose,slug,phase);
 }
 
 /** Equipment primitives are also used to fit cameras and verify attachments. */
@@ -164,5 +165,5 @@ export function exerciseEquipment(pose,slug,phase) {
         if(slug==='seated-cable-row') box(-.28,.28,.03,.45,-.20,.20);
         if(slug==='lat-pulldown') {box(-.28,.28,.03,.49,-.20,.20);line(pose.arms.map(arm=>arm.wrist),'#b6cadd',3,'bar');}
     }
-    return items;
+    return [...items,...formEquipment(pose,slug,phase)];
 }

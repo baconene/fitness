@@ -203,6 +203,21 @@ export const loadFor = (slug) => ARCHETYPES[slug]?.load ?? null;
 
 /** Coaching line for an archetype-driven exercise. */
 const MOVEMENT_CUES = {
+    'calf-raise': 'keep the balls of your feet planted, lift your heels, then lower with control; use the rail for balance.',
+    'cat-cow': 'stay on hands and knees and gently alternate rounding and extending your spine.',
+    'chest-fly': 'lie on the bench with feet planted, keep soft elbows, and open then close the dumbbells over your chest.',
+    'chin-up': 'hold the fixed bar with an underhand grip, raise your chin toward it, then lower with control.',
+    'clap-push-up': 'press explosively, bring your hands together briefly, then land with soft elbows.',
+    'close-grip-push-up': 'keep your hands close together and your body aligned as you lower and press up.',
+    'cycling': 'stay seated with hands on the handlebars and pedal in a smooth alternating circle.',
+    'dead-bug': 'keep your trunk still while extending opposite arm and leg, return, then switch sides.',
+    'decline-bench-press': 'secure your feet on the decline bench and lower the bar toward your chest before pressing up.',
+    'dips': 'grip the parallel bars, lower by bending your elbows, and press up with your feet clear of the floor.',
+    'dumbbell-pullover': 'support your back on the bench and move one dumbbell overhead with softly bent elbows.',
+    'elliptical-trainer': 'keep your feet on the platforms and move the handles with the alternating stride.',
+    'front-raise': 'raise the dumbbells forward to shoulder height with softly bent elbows, then lower slowly.',
+    'hanging-leg-raise': 'hang from the bar and raise your legs forward with a steady trunk, then lower slowly.',
+    'hip-thrust': 'support your upper back on the bench, keep your feet planted, and drive your hips upward under the bar.',
     'ab-wheel-rollout': 'knees grounded, roll the wheel forward with a braced trunk, then return under control.',
     'battle-ropes': 'hold a soft-knee stance and alternate your arms to send waves down both ropes.',
     'bicycle-crunch': 'alternate the bent knee and opposite shoulder while extending the other leg; keep your hands light at your temples.',

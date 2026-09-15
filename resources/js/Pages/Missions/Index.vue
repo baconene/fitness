@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import HunterLayout from '@/Layouts/HunterLayout.vue';
 import Icon from '@/Components/Icon.vue';
@@ -10,6 +10,8 @@ const props = defineProps({
     quests: { type: Object, required: true },
     today: { type: String, required: true },
     completedCount: { type: Number, default: 0 },
+    activeCount: { type: Number, default: 0 },
+    questType: { type: String, default: 'all' },
     upcomingWorkouts: { type: Array, default: () => [] },
     exerciseOptions: { type: Array, default: () => [] },
 });
@@ -42,7 +44,7 @@ const canClaim = (quest) =>
     quest.assignedDate <= props.today &&
     !isExpired(quest);
 
-const active = computed(() => props.quests.data.filter((q) => q.status === 'Active'));
+const missionFilters = [{ value: 'all', label: 'All missions' }, { value: 'daily', label: 'Daily' }, { value: 'weekly', label: 'Weekly' }];
 
 const claim = (quest) => {
     router.post(route('missions.claim', quest.id), {}, { preserveScroll: true });
@@ -51,12 +53,21 @@ const claim = (quest) => {
 
 <template>
     <HunterLayout title="Missions" subtitle="Objectives the system has set for you.">
+        <nav aria-label="Mission frequency" class="mb-5 flex flex-wrap gap-2">
+            <Link v-for="filter in missionFilters" :key="filter.value"
+                :href="route('missions.index', filter.value === 'all' ? {} : { type: filter.value })"
+                :aria-current="questType === filter.value ? 'page' : undefined"
+                class="sys-pill min-h-11 px-5" :class="questType === filter.value ? 'sys-pill-active' : 'hover:border-brand/50'"
+                preserve-scroll>
+                {{ filter.label }}
+            </Link>
+        </nav>
         <div class="mb-6 grid gap-3 sm:grid-cols-3">
             <div class="sys-panel sys-corners flex items-center gap-4 p-5">
                 <span class="sys-badge text-brand"><Icon name="scroll" :size="20" /></span>
                 <div>
                     <p class="sys-label-sm">Active</p>
-                    <p class="text-2xl font-semibold tabular-nums text-content">{{ active.length }}</p>
+                    <p class="text-2xl font-semibold tabular-nums text-content">{{ activeCount }}</p>
                 </div>
             </div>
             <div class="sys-panel flex items-center gap-4 p-5">
@@ -183,7 +194,7 @@ const claim = (quest) => {
         </ul>
 
         <p v-else class="sys-panel p-10 text-center text-sm text-muted">
-            No missions assigned yet.
+            {{ questType === 'all' ? 'No missions assigned yet.' : `No ${questType} missions assigned yet.` }}
         </p>
 
         <Pagination :links="quests.links" />
