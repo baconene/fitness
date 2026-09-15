@@ -52,10 +52,26 @@ class MissionFilterTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->where('completedCount', 1)->where('activeCount', 0));
     }
 
-    private function template(string $type): QuestTemplate
+    public function test_every_computed_metric_links_to_where_it_is_logged(): void
     {
-        return QuestTemplate::factory()->create(['name' => $type.' mission', 'slug' => strtolower($type),
-            'quest_type' => $type, 'category' => 'Test', 'difficulty' => 'Easy', 'target_metric' => 'manual',
+        $user = User::factory()->create();
+        $user->hunterProfile()->create(['rank' => HunterRank::ERank]);
+        $this->assignment($user, $this->template('Daily', 'DistanceKm'), now()->subDay()->toDateString());
+        $this->assignment($user, $this->template('Weekly', 'WaterLitres'), now()->subDays(2)->toDateString());
+        $this->assignment($user, $this->template('Daily', 'manual', 'uncomputed'), now()->subDays(3)->toDateString());
+
+        $this->actingAs($user)->get(route('missions.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('quests.data.0.tracking.href', route('workouts.index'))
+                ->where('quests.data.0.tracking.hint', fn (string $hint) => str_contains($hint, 'distance'))
+                ->where('quests.data.1.tracking.href', route('health.index'))
+                ->where('quests.data.2.tracking', null));
+    }
+
+    private function template(string $type, string $metric = 'manual', ?string $slug = null): QuestTemplate
+    {
+        return QuestTemplate::factory()->create(['name' => $type.' mission', 'slug' => $slug ?? strtolower($type.'-'.$metric),
+            'quest_type' => $type, 'category' => 'Test', 'difficulty' => 'Easy', 'target_metric' => $metric,
             'target_value' => 1, 'xp_reward_base' => 10, 'is_active' => false]);
     }
 

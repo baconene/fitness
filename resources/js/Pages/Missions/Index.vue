@@ -162,6 +162,9 @@ const claim = (quest) => {
                         <span class="tabular-nums text-content/85">{{ quest.current }} / {{ quest.target }}</span>
                     </div>
                     <div class="sys-track"><div class="sys-fill" :style="{ width: percent(quest) + '%' }" /></div>
+                    <p v-if="quest.tracking && quest.status === 'Active'" class="mt-2 text-[11px] text-muted">
+                        {{ quest.tracking.hint }} Progress updates automatically.
+                    </p>
                 </div>
 
                 <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
@@ -182,12 +185,12 @@ const claim = (quest) => {
                         </button>
                         <Link
                             v-else-if="quest.tracking"
-                            :href="quest.actionHref"
+                            :href="quest.tracking.href"
                             class="sys-pill min-h-9 hover:border-brand/50"
                         >
-                            Go log it <Icon name="arrowRight" :size="12" />
+                            {{ quest.tracking.label }} <Icon name="arrowRight" :size="12" />
                         </Link>
-                        <span v-else class="text-[11px] text-muted">Tracked manually</span>
+                        <span v-else class="text-[11px] text-muted">Progress not tracked yet</span>
                     </div>
                 </div>
             </li>

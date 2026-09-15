@@ -54,8 +54,7 @@ class MissionsController extends Controller
                     'xp' => (int) $quest->questTemplate->xp_reward_base,
                     'assignedDate' => $quest->assigned_date->toDateString(),
                     'expiresAt' => $quest->expires_at?->toDateString(),
-                    'tracking' => in_array($metric, ['workoutscompleted', 'measurementslogged', 'personalrecords'], true),
-                    'actionHref' => route($metric === 'measurementslogged' ? 'health.index' : 'workouts.index'),
+                    'tracking' => $this->trackingFor($quest->questTemplate->target_metric),
                 ];
             }),
             'today' => now($user->timezone())->toDateString(),
@@ -64,6 +63,28 @@ class MissionsController extends Controller
             'exerciseOptions' => Exercise::where('is_active', true)->orderBy('name')
                 ->get(['id', 'name', 'exercise_type', 'primary_muscle']),
         ]);
+    }
+
+    /**
+     * Where a hunter records progress for a metric, and what counts towards it.
+     * Mirrors the metrics QuestGenerationService::synchronizeProgress() computes.
+     *
+     * @return array{href: string, label: string, hint: string}|null
+     */
+    private function trackingFor(string $targetMetric): ?array
+    {
+        [$routeName, $label, $hint] = match (strtolower(str_replace('_', '', $targetMetric))) {
+            'workoutscompleted' => ['workouts.index', 'Start a workout', 'Counts each workout you finish.'],
+            'activedays' => ['workouts.index', 'Start a workout', 'Counts each day you finish a workout.'],
+            'personalrecords' => ['workouts.index', 'Start a workout', 'Counts new personal records set during workouts.'],
+            'trainingminutes' => ['workouts.index', 'Log a timed set', 'Counts the duration of completed cardio, mobility and stretching sets.'],
+            'distancekm' => ['workouts.index', 'Log a cardio set', 'Counts the distance entered on completed cardio sets.'],
+            'measurementslogged' => ['health.index', 'Log a measurement', 'Counts each day you log a body measurement.'],
+            'waterlitres' => ['health.index', 'Log water', 'Counts the water you log on the Health page.'],
+            default => [null, null, null],
+        };
+
+        return $routeName ? ['href' => route($routeName), 'label' => $label, 'hint' => $hint] : null;
     }
 
     /**
