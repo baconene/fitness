@@ -228,7 +228,7 @@ const changeSets = (exercise, delta) => {
                 v-for="(exercise, index) in orderedExercises"
                 :key="exercise.id"
                 data-row
-                class="flex items-center justify-between gap-2 rounded-md border p-3 transition-colors"
+                class="flex flex-col gap-2 rounded-md border p-3 transition-colors sm:flex-row sm:items-center sm:justify-between"
                 :class="[
                     exercise.exerciseId === currentExerciseId
                         ? 'border-brand/50 bg-brand/5'
@@ -263,25 +263,30 @@ const changeSets = (exercise, delta) => {
                     </span>
                 </div>
 
-                <div class="flex shrink-0 items-center gap-1.5">
+                <!--
+                    On a phone the controls sit on their own line under the name.
+                    Packed onto one row they collide once the name is anything
+                    but short.
+                -->
+                <div class="flex shrink-0 items-center justify-end gap-1 sm:gap-1.5">
                     <!-- Set count; the floor is whatever has already been logged. -->
                     <template v-if="editable">
                         <button
                             type="button"
                             :aria-label="`Remove a set from ${exercise.name}`"
-                            class="sys-pill min-h-8 px-2 hover:border-brand/50 disabled:opacity-30"
+                            class="plan-step"
                             :disabled="pending || exercise.sets <= Math.max(1, exercise.completedSets)"
                             @click="changeSets(exercise, -1)"
                         >
                             −
                         </button>
-                        <span class="min-w-[54px] text-center text-[12px] tabular-nums text-muted">
+                        <span class="w-11 shrink-0 text-center text-[12px] tabular-nums text-muted">
                             {{ exercise.completedSets }}/{{ exercise.sets }}
                         </span>
                         <button
                             type="button"
                             :aria-label="`Add a set to ${exercise.name}`"
-                            class="sys-pill min-h-8 px-2 hover:border-brand/50 disabled:opacity-30"
+                            class="plan-step"
                             :disabled="pending || exercise.sets >= 10"
                             @click="changeSets(exercise, 1)"
                         >
@@ -297,7 +302,7 @@ const changeSets = (exercise, delta) => {
                         <button
                             type="button"
                             :aria-label="`Move ${exercise.name} earlier`"
-                            class="sys-pill hidden min-h-8 px-2 hover:border-brand/50 disabled:opacity-30 sm:inline-flex"
+                            class="plan-step hidden sm:inline-grid"
                             :disabled="pending || index === 0"
                             @click="moveExercise(exercise, 'up')"
                         >
@@ -306,7 +311,7 @@ const changeSets = (exercise, delta) => {
                         <button
                             type="button"
                             :aria-label="`Move ${exercise.name} later`"
-                            class="sys-pill hidden min-h-8 px-2 hover:border-brand/50 disabled:opacity-30 sm:inline-flex"
+                            class="plan-step hidden sm:inline-grid"
                             :disabled="pending || index === exercises.length - 1"
                             @click="moveExercise(exercise, 'down')"
                         >
@@ -317,8 +322,8 @@ const changeSets = (exercise, delta) => {
                     <button
                         v-if="editable && exercise.completedSets === 0 && exercises.length > 1"
                         type="button"
-                        aria-label="Remove exercise"
-                        class="sys-pill min-h-8 hover:border-danger/50 hover:text-danger"
+                        :aria-label="`Remove ${exercise.name}`"
+                        class="plan-step ml-1 hover:border-danger/50 hover:text-danger"
                         :disabled="pending"
                         @click="removeExercise(exercise)"
                     >
@@ -414,5 +419,34 @@ const changeSets = (exercise, delta) => {
 
 .drag-handle:disabled {
     opacity: 0.4;
+}
+
+/*
+ * One fixed size for every control in the row. The pill class they used before
+ * sized itself from its label, so the count and the icons ended up different
+ * widths and ran into each other once a name was long.
+ */
+.plan-step {
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.375rem;
+    border: 1px solid rgb(var(--color-edge) / 0.3);
+    background: rgba(255, 255, 255, 0.03);
+    color: rgb(var(--color-muted));
+    font-size: 0.9375rem;
+    line-height: 1;
+    touch-action: manipulation;
+}
+
+.plan-step:hover:not(:disabled) {
+    border-color: rgb(var(--color-brand) / 0.5);
+    color: rgb(var(--color-content));
+}
+
+.plan-step:disabled {
+    opacity: 0.3;
 }
 </style>
