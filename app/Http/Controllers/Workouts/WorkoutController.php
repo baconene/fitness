@@ -86,8 +86,17 @@ class WorkoutController extends Controller
         Gate::authorize('update', $workout);
         abort_unless($workoutExercise->workout_id === $workout->id, 403);
 
-        $data = $request->validate(['direction' => ['required', Rule::in(['up', 'down'])]]);
-        $this->workoutService->moveExercise($workout, $workoutExercise, $data['direction'] === 'up' ? -1 : 1);
+        // Buttons send a direction; dragging sends the position it was dropped at.
+        $data = $request->validate([
+            'direction' => ['required_without:position', Rule::in(['up', 'down'])],
+            'position' => ['required_without:direction', 'integer', 'min:1', 'max:20'],
+        ]);
+
+        if (isset($data['position'])) {
+            $this->workoutService->moveExerciseTo($workout, $workoutExercise, $data['position']);
+        } else {
+            $this->workoutService->moveExercise($workout, $workoutExercise, $data['direction'] === 'up' ? -1 : 1);
+        }
 
         return back()->with('success', 'Mission order updated.');
     }

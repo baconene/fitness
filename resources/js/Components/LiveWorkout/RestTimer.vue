@@ -43,10 +43,10 @@ watch(timeRemaining, (remaining) => {
 </script>
 
 <template>
-    <div class="sys-panel flex flex-col gap-5 p-6 text-center">
+    <div class="sys-panel flex flex-col gap-3 px-0 py-3 sm:gap-5 sm:p-6 text-center">
         <div>
             <p class="sys-label-sm">Rest</p>
-            <p class="mt-2 font-mono text-5xl font-semibold tabular-nums text-brand">
+            <p class="mt-1 font-mono text-3xl sm:text-5xl font-semibold tabular-nums text-brand">
                 {{ formatTime(timeRemaining) }}
             </p>
         </div>

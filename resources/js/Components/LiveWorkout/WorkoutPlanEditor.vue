@@ -116,6 +116,87 @@ const moveExercise = (exercise, direction) =>
         ),
     );
 
+/**
+ * Touch drag-to-reorder.
+ *
+ * Pointer events rather than HTML5 drag-and-drop, which does not fire on touch.
+ * The list is reordered optimistically while dragging so the row follows the
+ * finger, then the final position is sent once on release.
+ */
+const listEl = ref(null);
+const dragFrom = ref(null);
+const dragTo = ref(null);
+
+/** The order shown while dragging; the server order at rest. */
+const orderedExercises = computed(() => {
+    if (dragFrom.value === null || dragTo.value === null || dragFrom.value === dragTo.value) {
+        return props.exercises;
+    }
+
+    const rows = [...props.exercises];
+    const [moved] = rows.splice(dragFrom.value, 1);
+    rows.splice(dragTo.value, 0, moved);
+
+    return rows;
+});
+
+const startDrag = (index, event) => {
+    if (!props.editable || pending.value || props.exercises.length < 2) {
+        return;
+    }
+
+    dragFrom.value = index;
+    dragTo.value = index;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+};
+
+const onDragMove = (event) => {
+    if (dragFrom.value === null) {
+        return;
+    }
+
+    // Stops the page scrolling under the finger mid-drag.
+    event.preventDefault();
+
+    const rows = [...(listEl.value?.querySelectorAll('[data-row]') ?? [])];
+    const landed = rows.findIndex((row) => event.clientY < row.getBoundingClientRect().bottom);
+
+    dragTo.value = landed === -1 ? rows.length - 1 : landed;
+};
+
+const endDrag = () => {
+    const from = dragFrom.value;
+    const to = dragTo.value;
+    const exercise = from === null ? null : props.exercises[from];
+
+    dragFrom.value = null;
+    dragTo.value = null;
+
+    if (!exercise || to === null || from === to) {
+        return;
+    }
+
+    request((options) =>
+        router.patch(
+            route('workouts.exercises.move', { workout: props.workoutId, workoutExercise: exercise.id }),
+            { position: to + 1 },
+            options,
+        ),
+    );
+};
+
+/** Keyboard equivalent, so the handle is not pointer-only. */
+const nudgeFromHandle = (exercise, index, event) => {
+    const direction = event.key === 'ArrowUp' ? 'up' : 'down';
+
+    if ((direction === 'up' && index === 0) || (direction === 'down' && index === props.exercises.length - 1)) {
+        return;
+    }
+
+    event.preventDefault();
+    moveExercise(exercise, direction);
+};
+
 /** Sets cannot drop below what has already been logged, so the floor moves up. */
 const changeSets = (exercise, delta) => {
     const sets = exercise.sets + delta;
@@ -136,18 +217,39 @@ const changeSets = (exercise, delta) => {
 
 <template>
     <div class="flex flex-col gap-2">
-        <ol class="flex flex-col gap-1.5">
+        <ol
+            ref="listEl"
+            class="flex flex-col gap-1.5"
+            @pointermove="onDragMove"
+            @pointerup="endDrag"
+            @pointercancel="endDrag"
+        >
             <li
-                v-for="(exercise, index) in exercises"
+                v-for="(exercise, index) in orderedExercises"
                 :key="exercise.id"
-                class="flex items-center justify-between gap-3 rounded-md border p-3"
-                :class="
+                data-row
+                class="flex items-center justify-between gap-2 rounded-md border p-3 transition-colors"
+                :class="[
                     exercise.exerciseId === currentExerciseId
                         ? 'border-brand/50 bg-brand/5'
-                        : 'border-edge/10 bg-canvas/40'
-                "
+                        : 'border-edge/10 bg-canvas/40',
+                    dragFrom !== null && orderedExercises[dragTo]?.id === exercise.id ? 'border-brand bg-brand/10' : '',
+                ]"
             >
-                <div class="flex min-w-0 items-baseline gap-2">
+                <div class="flex min-w-0 items-center gap-2">
+                    <!-- Drag handle: the primary reorder affordance on touch. -->
+                    <button
+                        v-if="editable && exercises.length > 1"
+                        type="button"
+                        class="drag-handle sm:hidden"
+                        :aria-label="`Reorder ${exercise.name}. Use arrow keys, or drag.`"
+                        :disabled="pending"
+                        @pointerdown="startDrag(index, $event)"
+                        @keydown.up="nudgeFromHandle(exercise, index, $event)"
+                        @keydown.down="nudgeFromHandle(exercise, index, $event)"
+                    >
+                        <span aria-hidden="true">⠿</span>
+                    </button>
                     <span class="shrink-0 text-[12px] tabular-nums text-muted">{{ index + 1 }}.</span>
                     <span
                         class="min-w-0 truncate text-[13px]"
@@ -190,12 +292,12 @@ const changeSets = (exercise, delta) => {
                         {{ exercise.completedSets }}/{{ exercise.sets }} sets
                     </span>
 
-                    <!-- Reorder; sets and their results travel with the exercise. -->
+                    <!-- Reorder on pointer devices; phones use the drag handle. -->
                     <template v-if="editable && exercises.length > 1">
                         <button
                             type="button"
                             :aria-label="`Move ${exercise.name} earlier`"
-                            class="sys-pill min-h-8 px-2 hover:border-brand/50 disabled:opacity-30"
+                            class="sys-pill hidden min-h-8 px-2 hover:border-brand/50 disabled:opacity-30 sm:inline-flex"
                             :disabled="pending || index === 0"
                             @click="moveExercise(exercise, 'up')"
                         >
@@ -204,7 +306,7 @@ const changeSets = (exercise, delta) => {
                         <button
                             type="button"
                             :aria-label="`Move ${exercise.name} later`"
-                            class="sys-pill min-h-8 px-2 hover:border-brand/50 disabled:opacity-30"
+                            class="sys-pill hidden min-h-8 px-2 hover:border-brand/50 disabled:opacity-30 sm:inline-flex"
                             :disabled="pending || index === exercises.length - 1"
                             @click="moveExercise(exercise, 'down')"
                         >
@@ -283,3 +385,34 @@ const changeSets = (exercise, delta) => {
         </template>
     </div>
 </template>
+
+<style scoped>
+/*
+ * touch-action: none is what makes the drag work on a phone — without it the
+ * browser claims the gesture for scrolling before pointermove ever fires.
+ */
+.drag-handle {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    min-height: 2.25rem;
+    margin-left: -0.25rem;
+    border-radius: 0.375rem;
+    color: rgb(var(--color-muted));
+    font-size: 1rem;
+    line-height: 1;
+    touch-action: none;
+    cursor: grab;
+}
+
+.drag-handle:active {
+    background: rgb(var(--color-brand) / 0.12);
+    color: rgb(var(--color-brand));
+    cursor: grabbing;
+}
+
+.drag-handle:disabled {
+    opacity: 0.4;
+}
+</style>

@@ -160,7 +160,24 @@ class WorkoutService
      */
     public function moveExercise(Workout $workout, WorkoutExercise $workoutExercise, int $offset): void
     {
-        DB::transaction(function () use ($workout, $workoutExercise, $offset): void {
+        $from = $workout->workoutExercises()->orderBy('order')->pluck('id')
+            ->search(fn (int $id): bool => $id === $workoutExercise->id);
+
+        if ($from !== false) {
+            $this->moveExerciseTo($workout, $workoutExercise, $from + $offset + 1);
+        }
+    }
+
+    /**
+     * Moves an exercise to a 1-based position in the running order.
+     *
+     * Dragging can land anywhere in the list, so the position is absolute
+     * rather than a step. Out-of-range targets are ignored rather than
+     * clamped, so a drag that ends off the list changes nothing.
+     */
+    public function moveExerciseTo(Workout $workout, WorkoutExercise $workoutExercise, int $position): void
+    {
+        DB::transaction(function () use ($workout, $workoutExercise, $position): void {
             $workout = $workout->newQuery()->lockForUpdate()->findOrFail($workout->id);
 
             if ($workout->status === 'completed') {
@@ -169,9 +186,9 @@ class WorkoutService
 
             $ordered = $workout->workoutExercises()->orderBy('order')->get();
             $from = $ordered->search(fn (WorkoutExercise $entry): bool => $entry->id === $workoutExercise->id);
-            $to = $from + $offset;
+            $to = $position - 1;
 
-            if ($from === false || $to < 0 || $to >= $ordered->count()) {
+            if ($from === false || $to < 0 || $to >= $ordered->count() || $to === $from) {
                 return;
             }
 

@@ -255,6 +255,59 @@ class WorkoutExerciseEditingTest extends TestCase
         $this->assertDatabaseHas('workout_sets', ['id' => $set->id, 'is_completed' => true, 'reps_completed' => 8]);
     }
 
+    public function test_an_exercise_can_be_dragged_to_an_arbitrary_position(): void
+    {
+        $user = $this->awakenedUser();
+        $workout = $this->activeWorkout($user, $this->exercise('Bench Press'));
+
+        foreach (['Barbell Row', 'Overhead Press', 'Lateral Raise'] as $name) {
+            $this->actingAs($user)->post(
+                route('workouts.exercises.add', $workout),
+                ['exercise_id' => $this->exercise($name)->id, 'sets' => 2],
+            );
+        }
+
+        $first = $workout->workoutExercises()->where('order', 1)->firstOrFail();
+
+        // A drag can cross several rows at once, unlike the step buttons.
+        $this->actingAs($user)
+            ->patch(route('workouts.exercises.move', ['workout' => $workout, 'workoutExercise' => $first]), ['position' => 4])
+            ->assertRedirect();
+
+        $this->assertSame(4, (int) $first->refresh()->order);
+        $this->assertSame([1, 2, 3, 4], $workout->workoutExercises()->orderBy('order')->pluck('order')->all());
+    }
+
+    public function test_a_drag_landing_off_the_list_changes_nothing(): void
+    {
+        $user = $this->awakenedUser();
+        $workout = $this->activeWorkout($user, $this->exercise('Bench Press'));
+        $this->actingAs($user)->post(
+            route('workouts.exercises.add', $workout),
+            ['exercise_id' => $this->exercise('Barbell Row')->id, 'sets' => 2],
+        );
+
+        $first = $workout->workoutExercises()->where('order', 1)->firstOrFail();
+        $before = $workout->workoutExercises()->orderBy('order')->pluck('id')->all();
+
+        $this->actingAs($user)
+            ->patch(route('workouts.exercises.move', ['workout' => $workout, 'workoutExercise' => $first]), ['position' => 9])
+            ->assertRedirect();
+
+        $this->assertSame($before, $workout->workoutExercises()->orderBy('order')->pluck('id')->all());
+    }
+
+    public function test_a_move_needs_either_a_direction_or_a_position(): void
+    {
+        $user = $this->awakenedUser();
+        $workout = $this->activeWorkout($user, $this->exercise('Bench Press'));
+        $workoutExercise = $workout->workoutExercises()->firstOrFail();
+
+        $this->actingAs($user)
+            ->patch(route('workouts.exercises.move', ['workout' => $workout, 'workoutExercise' => $workoutExercise]), [])
+            ->assertSessionHasErrors(['direction', 'position']);
+    }
+
     public function test_moving_past_either_end_is_a_no_op(): void
     {
         $user = $this->awakenedUser();

@@ -30,7 +30,7 @@ const page = usePage();
             <span class="h-11 w-11 shrink-0" aria-hidden="true" />
         </header>
 
-        <main class="mx-auto w-full max-w-[1280px] flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        <main class="mx-auto w-full max-w-[1280px] flex-1 px-3 py-3 sm:px-6 sm:py-6 lg:px-8">
             <div
                 v-if="page.props.flash?.success"
                 role="status"

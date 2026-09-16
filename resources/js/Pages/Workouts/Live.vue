@@ -218,6 +218,7 @@ const onRestComplete = () => {
 <template>
     <LiveWorkoutLayout title="Live Mission">
         <LiveMissionPage
+            :logging-active="canTrain && !!store.currentSet && !store.isWorkoutComplete"
             :hunter="liveHunter" :mission="missionData" :target-muscles="targetMuscles"
             :mission-rewards="missionRewards" :health-targets="healthTargets" :daily-quests="dailyQuests"
             :system-message="systemMessage" :completed-sets="completedSets" :total-sets="totalSets"
@@ -237,7 +238,7 @@ const onRestComplete = () => {
                 <div ref="currentPanel" tabindex="-1" class="scroll-mt-24 outline-none">
                     <p v-if="errorMessage && canTrain && !store.isWorkoutComplete" role="alert" class="mb-4 border border-danger/30 bg-danger/5 p-4 text-sm text-danger">{{ errorMessage }}</p>
                     <p class="mission-label text-brand">{{ isCompleted ? 'Mission report' : 'Current objective' }}</p>
-                    <p v-if="setFeedback" role="status" class="mt-4 border-l-2 border-success/60 pl-3 text-sm text-success">{{ setFeedback }}</p>
+                    <p v-if="setFeedback" role="status" class="mt-2 border-l-2 border-success/60 pl-3 text-sm text-success">{{ setFeedback }}</p>
                     <div v-if="isCompleted" class="py-8">
                         <Icon name="checkCircle" :size="32" class="text-success" />
                         <h3 class="mt-4 text-xl font-semibold">Mission cleared</h3>
@@ -249,7 +250,7 @@ const onRestComplete = () => {
                     </div>
                     <template v-else-if="store.currentExercise">
                         <ExerciseHeader :exercise="store.currentExercise.exercise" :target-reps="store.currentExercise.target_reps" :previous-set="store.currentExercise.previous_set" />
-                        <p class="mb-3 text-xs text-muted">{{ store.currentSet ? 'Set ' + store.currentSet.set_number + ' / ' + store.currentExercise.workout_sets.length : 'All sets recorded for this exercise.' }}</p>
+                        <p class="mb-1 text-xs text-muted">{{ store.currentSet ? 'Set ' + store.currentSet.set_number + ' / ' + store.currentExercise.workout_sets.length : 'All sets recorded for this exercise.' }}</p>
                         <RestTimer v-if="canTrain && store.isResting" @complete="onRestComplete" />
                         <SetCard v-else-if="canTrain && store.currentSet && hunter" :key="store.currentSet.id" :set="store.currentSet" :exercise="store.currentExercise.exercise" :previous-set="store.currentExercise.previous_set" @complete="completeSet" />
                         <p v-else-if="!canTrain" class="py-4 text-sm text-muted">Start this mission to begin recording sets.</p>
