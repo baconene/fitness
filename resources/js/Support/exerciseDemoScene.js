@@ -1,10 +1,11 @@
+import { APPARATUS_DEMOS } from './exerciseApparatusRefinements.js';
 /** Original articulated mannequin used to render the exercise GIFs and posters. */
 import { archetypeFor, focusFor, loadFor } from './exerciseArchetypes.js';
 import { correctExercisePose, exerciseEquipment } from './exerciseCorrections.js';
 import { FORM_DEMOS } from './exerciseFormCorrections.js';
 import { MOTION_DEMOS } from './exerciseMotionRefinements.js';
 
-const AUTHORED_LOADS = [...FORM_DEMOS, ...MOTION_DEMOS];
+const AUTHORED_LOADS = [...FORM_DEMOS, ...MOTION_DEMOS, ...APPARATUS_DEMOS];
 
 const add = (a, b) => a.map((v, i) => v + b[i]);
 const sub = (a, b) => a.map((v, i) => v - b[i]);
@@ -547,7 +548,7 @@ export function exerciseCamera(slug) {
     if (cameraFrames.has(slug)) return cameraFrames.get(slug);
     const initial = exercisePose(slug, 0);
     const horizontal = slug === 'bench-press' || initial.prone || initial.horizontal;
-    const yaw = ['incline-treadmill-walk','box-jump','broad-jump','burpee','battle-ropes','calf-raise','cycling','elliptical-trainer','front-raise','hanging-leg-raise','concentration-curl','goblet-squat','kettlebell-swing','landmine-press','lat-pulldown','machine-chest-press','leg-extension','leg-press','incline-dumbbell-curl'].includes(slug) ? -1.05 : horizontal ? -1.02 : .48;
+    const yaw = ['rowing-machine','stair-climber','t-bar-row','seated-calf-raise','triceps-bench-dip','incline-treadmill-walk','box-jump','broad-jump','burpee','battle-ropes','calf-raise','cycling','elliptical-trainer','front-raise','hanging-leg-raise','concentration-curl','goblet-squat','kettlebell-swing','landmine-press','lat-pulldown','machine-chest-press','leg-extension','leg-press','incline-dumbbell-curl'].includes(slug) ? -1.05 : horizontal ? -1.02 : .48;
     const pitch = horizontal ? .24 : .12;
     const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
     const project = ([x,y,z]) => [x*cy-z*sy, -y*cp+(x*sy+z*cy)*sp, (x*sy+z*cy)*cp+y*sp];
@@ -644,7 +645,9 @@ export function drawExerciseDemo(canvas, slug, phase) {
     const up=unit(sub(pose.neck,pose.pelvis));
     const right=unit(sub(pose.right??[1,0,0],mul(up,dot(pose.right??[1,0,0],up))));
     const forward=mul(unit(cross(right,up)),pose.prone?-1:1),basis=[right,up,forward];
-    const body=(height,x,depth)=>add(add(mix(pose.pelvis,pose.neck,height),[0,(pose.spineArch??0)*Math.sin(Math.PI*height),0]),add(mul(right,x),mul(forward,depth)));
+    const localRight=height=>pose.pelvisRight?unit(mix(pose.pelvisRight,right,Math.max(0,Math.min(1,height)))):right;
+    const localForward=height=>mul(unit(cross(localRight(height),up)),pose.prone?-1:1);
+    const body=(height,x,depth)=>add(add(mix(pose.pelvis,pose.neck,height),[0,(pose.spineArch??0)*Math.sin(Math.PI*height),0]),add(mul(localRight(height),x),mul(localForward(height),depth)));
     // Hand-authored slugs keep their original tinting; archetypes derive it.
     const focus=focusFor(slug);
     const chestFocus=['bench-press','push-up'].includes(slug)||focus==='chest'||focus==='arms';
@@ -657,7 +660,7 @@ export function drawExerciseDemo(canvas, slug, phase) {
         const vertices = rings.map(([height,width,depth]) => Array.from({length:segments}, (_,index) => {
             const angle=index/segments*Math.PI*2;
             const point=body(height,Math.cos(angle)*width,Math.sin(angle)*depth);
-            const normal=unit(add(mul(right,Math.cos(angle)/width),mul(forward,Math.sin(angle)/depth)));
+            const normal=unit(add(mul(localRight(height),Math.cos(angle)/width),mul(localForward(height),Math.sin(angle)/depth)));
             return {point:camera(point),normal};
         }));
         for(let ring=0;ring<rings.length-1;ring++) {
@@ -685,11 +688,11 @@ export function drawExerciseDemo(canvas, slug, phase) {
         ellipsoid(arm.elbow,[.044,.046,.043]);
         bone(arm.elbow,arm.wrist,.047,.039);
         const handAxis=unit(sub(arm.wrist,arm.elbow)),handEnd=add(arm.wrist,mul(handAxis,.085));
-        if ((pose.palms || ['bird-dog','cat-cow','clap-push-up','close-grip-push-up'].includes(slug)) && (slug!=='clap-push-up' || arm.wrist[1]<.12)) {
+        if (((pose.palms && (arm.wrist[1]<.12 || ['incline-push-up','triceps-bench-dip'].includes(slug))) || ['bird-dog','cat-cow','clap-push-up','close-grip-push-up'].includes(slug)) && (slug!=='clap-push-up' || arm.wrist[1]<.12)) {
             bone(arm.wrist,add(arm.wrist,[0,-.025,-.09]),.033,.018);
         } else if(slug==='clap-push-up') {
             ellipsoid(arm.wrist,[.018,.05,.03]);
-        } else if (['bench-press','dumbbell-curl','incline-treadmill-walk','ab-wheel-rollout','battle-ropes'].includes(slug) || (FORM_DEMOS.includes(slug) && !['dead-bug','cat-cow'].includes(slug)) || loadFor(slug)) {
+        } else if (pose.grip || ['bench-press','dumbbell-curl','incline-treadmill-walk','ab-wheel-rollout','battle-ropes'].includes(slug) || (FORM_DEMOS.includes(slug) && !['dead-bug','cat-cow'].includes(slug)) || loadFor(slug)) {
             ellipsoid(arm.wrist,[.043,.039,.038]);
             ellipsoid(add(arm.wrist,[.027,.017,.012]),[.014,.025,.018]);
         } else {
@@ -713,12 +716,15 @@ export function drawExerciseDemo(canvas, slug, phase) {
             ellipsoid(end,[.034,.132,.132],[59,75,101]);
         }
     }
-    pose.legs.forEach((leg)=>{
+    pose.legs.forEach((leg,index)=>{
         bone(leg.hip,leg.knee,.092,.097,legsFocus?blue:neutral);
         ellipsoid(leg.knee,[.058,.059,.061]);
         bone(leg.knee,leg.ankle,.059,.053);
         ellipsoid(leg.ankle,[.036,.038,.042]);
-        if(slug==='calf-raise') {
+        if(pose.footTips?.[index]) {
+            bone(leg.ankle,pose.footTips[index],.048,.025);
+            ellipsoid(pose.footTips[index],[.05,.026,.035]);
+        } else if(slug==='calf-raise') {
             bone(leg.ankle,[leg.ankle[0],.04,.12],.048,.025);
         } else if (plank) {
             bone(leg.ankle,add(leg.ankle,[0,-.06,.13]),.047,.033);

@@ -30,7 +30,7 @@ test('refined movements preserve anatomy, clear the floor, and loop without a ju
                 if (point[1] < .025) failures.push(`${slug} frame ${frame} below floor ${point[1]}`);
             }
         }
-        assert.match(demoFor(slug).gif, /motion-7/);
+        assert.match(demoFor(slug).gif, slug === 'burpee' ? /apparatus-8/ : /motion-7/);
     }
     assert.deepEqual([...new Set(failures.map(f => f.replace(/frame \d+/, 'frame')))], []);
 });

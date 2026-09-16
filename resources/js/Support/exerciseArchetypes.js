@@ -203,6 +203,18 @@ export const loadFor = (slug) => ARCHETYPES[slug]?.load ?? null;
 
 /** Coaching line for an archetype-driven exercise. */
 const MOVEMENT_CUES = {
+    'rowing-machine': 'push through the footplates, lean back slightly, then pull the handle; return arms first, then bend your knees.',
+    'shoulder-press': 'press the dumbbells overhead with a steady trunk, then lower toward shoulder height.',
+    'stair-climber': 'alternate steps on the moving treads and use the rails lightly for balance.',
+    'skull-crusher': 'lie on the bench, keep upper arms steady, and bend your elbows to lower the dumbbells beside your head.',
+    'mountain-climber': 'keep hands planted and alternate bringing each knee forward beneath your trunk.',
+    'seated-calf-raise': 'place thighs beneath the pad and toes on the platform; lift and lower your heels with control.',
+    'pull-up': 'hold the fixed overhead bar, pull your chin toward bar height, and lower with control.',
+    'swimming': 'alternate freestyle arm strokes with a small flutter kick and gentle torso rotation.',
+    't-bar-row': 'hinge at the hips with a steady back, pull the anchored bar toward your trunk, and lower with control.',
+    'thoracic-rotation': 'start on hands and knees, place one hand beside your head, and open that elbow while keeping hips steady.',
+    'triceps-bench-dip': 'keep palms on the bench and feet grounded; bend your elbows to lower, then press up.',
+    'glute-bridge': 'keep shoulders and feet grounded, raise your hips into alignment with your thighs, then lower with control.',
     'concentration-curl': 'sit with feet apart, brace your upper arm against your inner thigh, and curl one dumbbell without moving the elbow.',
     'goblet-squat': 'hold one weight at your chest, sit down between your hips, and stand with your feet planted.',
     'hamstring-stretch': 'lie on your back, support the raised thigh, and hold a comfortable stretch without bouncing.',

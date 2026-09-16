@@ -1,3 +1,4 @@
+import { APPARATUS_DEMOS, apparatusPose, apparatusEquipment } from './exerciseApparatusRefinements.js';
 /** Authored movements and equipment for exercises that cannot share a generic cycle. */
 import { refineExerciseForm, formEquipment } from './exerciseFormCorrections.js';
 import { MOTION_DEMOS, refineMotion, motionEquipment } from './exerciseMotionRefinements.js';
@@ -54,6 +55,7 @@ function burpeeFloor(lowered=false) {
 }
 
 export function correctExercisePose(pose,slug,phase) {
+    if (APPARATUS_DEMOS.includes(slug)) return apparatusPose(pose, slug, phase);
     if (MOTION_DEMOS.includes(slug)) return refineMotion(pose, slug, phase);
     const t=(1-Math.cos(phase*Math.PI*2))/2;
     if(slug==='box-jump'||slug==='broad-jump') {
@@ -118,6 +120,7 @@ export function correctExercisePose(pose,slug,phase) {
 
 /** Equipment primitives are also used to fit cameras and verify attachments. */
 export function exerciseEquipment(pose,slug,phase) {
+    if (APPARATUS_DEMOS.includes(slug)) return apparatusEquipment(pose, slug, phase);
     if (MOTION_DEMOS.includes(slug)) return motionEquipment(pose, slug, phase);
     const items=[];
     const line=(points,color='#8fa8bc',width=1.5,role='frame')=>items.push({type:'line',points,color,width,role});

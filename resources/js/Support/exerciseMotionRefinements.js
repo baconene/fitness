@@ -67,6 +67,8 @@ function sample(frames, phase) {
     return a.slice(1).map((value, i) => value + (b[i + 1] - value) * t);
 }
 
+export const motionGeometry = { sides, add, sub, mul, dot, unit, mix, smooth, cycle, bend, arm, leg, trunk, feet, seated, sample };
+
 export function refineMotion(pose, slug, phase) {
     if (!MOTION_DEMOS.includes(slug)) return pose;
     const t = (1 - Math.cos(tau * phase)) / 2;
