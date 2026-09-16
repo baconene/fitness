@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RankDefinitionSeeder::class,
             ExerciseCategorySeeder::class,
+            FilipinoFoodSeeder::class,
             ExerciseSeeder::class,
             QuestTemplateSeeder::class,
             AchievementSeeder::class,

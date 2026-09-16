@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExerciseController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\HunterSystemController;
+use App\Http\Controllers\MealPlanController;
 use App\Http\Controllers\MissionsController;
 use App\Http\Controllers\Onboarding\OnboardingController;
 use App\Http\Controllers\ProfileController;
@@ -91,6 +92,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/dungeons/{dungeon}/enter', [HunterSystemController::class, 'enterDungeon'])->name('dungeons.enter');
     Route::post('/dungeons/runs/{run}/abandon', [HunterSystemController::class, 'abandonDungeon'])->name('dungeons.abandon');
     Route::post('/bosses/{boss}/challenge', [HunterSystemController::class, 'challengeBoss'])->name('bosses.challenge');
+
+    // Meal planning
+    Route::get('/meals', [MealPlanController::class, 'index'])->name('meals.index');
+    Route::post('/meals/items', [MealPlanController::class, 'storeItem'])->name('meals.items.store');
+    Route::delete('/meals/items/{item}', [MealPlanController::class, 'destroyItem'])->name('meals.items.destroy');
+    Route::post('/meals/log', [MealPlanController::class, 'log'])->name('meals.log');
 
     // Health measurements and goals
     Route::get('/health', [HealthController::class, 'index'])->name('health.index');
