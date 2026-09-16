@@ -85,3 +85,56 @@ test('apparatus fits the camera and fixed bars and machines are present', () => 
         }
     }
 });
+
+test('reviewed knees keep their bend direction without snapping between frames', () => {
+    for (const slug of ['mountain-climber', 'burpee']) {
+        let previous = exercisePose(slug, 0);
+        for (let frame = 1; frame <= 256; frame++) {
+            const pose = exercisePose(slug, frame / 256);
+            pose.legs.forEach((l, i) => {
+                assert.ok(distance(l.knee, previous.legs[i].knee) < .08, `${slug} knee jumps at ${frame}`);
+                const dy = l.ankle[1] - l.hip[1], dz = l.ankle[2] - l.hip[2];
+                const bendDirection = (l.knee[1] - l.hip[1]) * dz - (l.knee[2] - l.hip[2]) * dy;
+                assert.ok(slug === 'burpee' ? bendDirection >= -1e-8 : bendDirection <= 1e-8, `${slug} knee reverses`);
+                assert.ok(l.knee[1] >= .06, `${slug} knee touches floor`);
+            });
+            if (slug === 'mountain-climber') {
+                assert.ok(pose.legs.some(l => l.ankle[2] > .85), 'one leg remains extended during the knee drive');
+            }
+            previous = pose;
+        }
+    }
+});
+
+test('toe-touch legs remain vertical and both feet point toward the head', () => {
+    const first = exercisePose('toe-touch-crunch', 0);
+    for (let frame = 0; frame < 64; frame++) {
+        const pose = exercisePose('toe-touch-crunch', frame / 64);
+        assert.deepEqual(pose.legs, first.legs);
+        pose.legs.forEach((l, i) => {
+            assert.equal(l.hip[2], l.ankle[2]);
+            assert.equal(l.hip[0], l.ankle[0]);
+            assert.equal(pose.footTips[i][1], l.ankle[1]);
+            assert.ok(pose.footTips[i][2] < l.ankle[2]);
+        });
+    }
+    assert.ok(exercisePose('toe-touch-crunch', .5).neck[1] > first.neck[1] + .15);
+});
+
+test('pec-deck levers rotate at fixed pivots and T-bar load sits beyond the grip', () => {
+    for (let frame = 0; frame < 64; frame++) {
+        const phase = frame / 64, pose = exercisePose('pec-deck', phase);
+        const equipment = exerciseEquipment(pose, 'pec-deck', phase);
+        const arms = equipment.filter(e => e.role === 'swing-arm');
+        arms.forEach((a, i) => {
+            assert.ok(Math.abs(distance(a.points[0], a.points[1]) - .30) < 1e-8);
+            assert.deepEqual(a.points[2], pose.arms[i].elbow);
+        });
+        assert.ok(equipment.some(e => e.role === 'back-pad'));
+        const row = exercisePose('t-bar-row', phase), items = exerciseEquipment(row, 't-bar-row', phase);
+        const anchor = items.find(e => e.role === 'anchored-bar').points[0];
+        const plate = items.find(e => e.role === 'weight').center;
+        assert.ok(anchor[2] < row.legs[0].ankle[2]);
+        assert.ok(plate[2] > row.arms[0].wrist[2]);
+    }
+});

@@ -71,7 +71,7 @@ export function apparatusPose(pose, slug, phase) {
         pose.arms = pose.arms.map((a, i) => arm(a.shoulder, [sides[i] * .25, .065, -.37], sides[i], [sides[i], .2, .7]));
         pose.legs = sides.map((side, i) => {
             const drive = Math.max(0, Math.sin(tau * phase + i * Math.PI)) ** 2;
-            const hip = add(pose.pelvis, [side * .12, 0, 0]), angle = 1.15 - 2.20 * drive;
+            const hip = add(pose.pelvis, [side * .12, 0, 0]), angle = 1.0 - 2.05 * drive;
             const knee = add(hip, [0, -.43 * Math.cos(angle), .43 * Math.sin(angle)]);
             const ankleY = .08 + .06 * drive;
             const ankle = [hip[0], ankleY, knee[2] + Math.sqrt(.43 ** 2 - (knee[1] - ankleY) ** 2)];
@@ -120,11 +120,11 @@ export function apparatusPose(pose, slug, phase) {
         const [hipY, hipZ, tilt, ankleZ, ankleY, handY, handZ] = sample([
             [0, .94, 0, 0, .05, .08, .90, .05],
             [.12, .40, -.05, 1.25, .05, .08, .065, .55],
-            [.20, .62, -.16, 1.62, -.48, .20, .065, .55],
+            [.20, .68, -.16, 1.72, -.48, .20, .065, .55],
             [.28, .346, -.214, 1.245, -1.035, .08, .065, .55],
             [.39, .21, -.175, 1.46, -1.025, .08, .065, .55],
             [.50, .346, -.214, 1.245, -1.035, .08, .065, .55],
-            [.57, .62, -.16, 1.62, -.48, .20, .065, .55],
+            [.57, .68, -.16, 1.72, -.48, .20, .065, .55],
             [.64, .40, -.05, 1.25, .05, .08, .065, .55],
             [.78, 1.19, 0, 0, .05, .33, 2.22, .07],
             [.89, .80, -.06, .15, .05, .08, 1.15, .24],
