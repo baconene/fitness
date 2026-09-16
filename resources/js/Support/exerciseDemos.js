@@ -11,6 +11,7 @@
 import { archetypeLabel } from './exerciseArchetypes.js';
 import { CORRECTED_DEMOS } from './exerciseCorrections.js';
 import { FORM_DEMOS } from './exerciseFormCorrections.js';
+import { MOTION_DEMOS } from './exerciseMotionRefinements.js';
 
 export const EXERCISE_DEMOS = {
     'bench-press': {
@@ -103,7 +104,7 @@ export const EXERCISE_DEMOS = {
 export const demoFor = (slug, name = null) => {
     const key = typeof slug === 'string' ? slug.toLowerCase().trim().replaceAll('_', '-').replaceAll(' ', '-') : '';
     // Bump when replacing public assets so returning browsers fetch the new artwork.
-    const artworkVersion = FORM_DEMOS.includes(key) ? 'form-6' : CORRECTED_DEMOS.includes(key) ? 'equipment-5' : key === 'incline-treadmill-walk' ? 'treadmill-4' : 'wireframe-3';
+    const artworkVersion = MOTION_DEMOS.includes(key) ? 'motion-7' : FORM_DEMOS.includes(key) ? 'form-6' : CORRECTED_DEMOS.includes(key) ? 'equipment-5' : key === 'incline-treadmill-walk' ? 'treadmill-4' : 'wireframe-3';
 
     const readableName = name ?? key.replaceAll('-', ' ').replace(/^./, (c) => c.toUpperCase());
     const hand = Object.hasOwn(EXERCISE_DEMOS, key) ? EXERCISE_DEMOS[key] : null;

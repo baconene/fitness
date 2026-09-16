@@ -19,8 +19,16 @@ test('wheel, ropes and cables stay attached to the hands throughout their moveme
         for (const slug of CABLE_DEMOS) {
             const pose = exercisePose(slug, phase);
             const cables = exerciseEquipment(pose, slug, phase).filter(item => item.role === 'cable');
-            assert.equal(cables.length, 2, slug);
-            cables.forEach((cable, index) => assert.deepEqual(cable.points.at(-1), pose.arms[index].wrist));
+            if (slug === 'lat-pulldown') {
+                assert.equal(cables.length, 1);
+                const bar = exerciseEquipment(pose, slug, phase).find(item => item.role === 'bar');
+                assert.deepEqual(cables[0].points[0], bar.points[2]);
+                assert.deepEqual(bar.points[1], pose.arms[0].wrist);
+                assert.deepEqual(bar.points[3], pose.arms[1].wrist);
+            } else {
+                assert.equal(cables.length, 2, slug);
+                cables.forEach((cable, index) => assert.deepEqual(cable.points.at(-1), pose.arms[index].wrist));
+            }
         }
     }
 });

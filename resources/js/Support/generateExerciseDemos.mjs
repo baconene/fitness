@@ -32,7 +32,7 @@ const render = (slug) => {
     const canvas = createCanvas(WIDTH, HEIGHT);
     const encoder = new GIFEncoder(WIDTH, HEIGHT, 'neuquant', false);
 
-    encoder.setDelay(FRAME_DELAY_MS);
+    encoder.setDelay(slug === 'burpee' ? 160 : slug === 'jump-rope' ? 35 : slug === 'kettlebell-swing' ? 70 : FRAME_DELAY_MS);
     encoder.setRepeat(0);
     encoder.setQuality(3);
     encoder.start();

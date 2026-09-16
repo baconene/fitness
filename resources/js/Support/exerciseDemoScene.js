@@ -2,6 +2,9 @@
 import { archetypeFor, focusFor, loadFor } from './exerciseArchetypes.js';
 import { correctExercisePose, exerciseEquipment } from './exerciseCorrections.js';
 import { FORM_DEMOS } from './exerciseFormCorrections.js';
+import { MOTION_DEMOS } from './exerciseMotionRefinements.js';
+
+const AUTHORED_LOADS = [...FORM_DEMOS, ...MOTION_DEMOS];
 
 const add = (a, b) => a.map((v, i) => v + b[i]);
 const sub = (a, b) => a.map((v, i) => v - b[i]);
@@ -544,7 +547,7 @@ export function exerciseCamera(slug) {
     if (cameraFrames.has(slug)) return cameraFrames.get(slug);
     const initial = exercisePose(slug, 0);
     const horizontal = slug === 'bench-press' || initial.prone || initial.horizontal;
-    const yaw = ['incline-treadmill-walk','box-jump','broad-jump','burpee','battle-ropes','calf-raise','cycling','elliptical-trainer','front-raise','hanging-leg-raise'].includes(slug) ? -1.05 : horizontal ? -1.02 : .48;
+    const yaw = ['incline-treadmill-walk','box-jump','broad-jump','burpee','battle-ropes','calf-raise','cycling','elliptical-trainer','front-raise','hanging-leg-raise','concentration-curl','goblet-squat','kettlebell-swing','landmine-press','lat-pulldown','machine-chest-press','leg-extension','leg-press','incline-dumbbell-curl'].includes(slug) ? -1.05 : horizontal ? -1.02 : .48;
     const pitch = horizontal ? .24 : .12;
     const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
     const project = ([x,y,z]) => [x*cy-z*sy, -y*cp+(x*sy+z*cy)*sp, (x*sy+z*cy)*cp+y*sp];
@@ -610,7 +613,7 @@ export function drawExerciseDemo(canvas, slug, phase) {
         ellipsoid(mix(a,b,.5),[width,Math.hypot(...sub(b,a))*.56,depth],color,[right,axis,forward]);
     };
     for(const item of exerciseEquipment(pose,slug,phase)) {
-        if(item.type==='ellipsoid') {ellipsoid(item.center,item.radii,item.color);continue;}
+        if(item.type==='ellipsoid') {ellipsoid(item.center,item.radii,item.color,item.basis);continue;}
         const points=item.points.map(camera);
         if(item.type==='line') {
             for(let i=1;i<points.length;i++) faces.push({points:[points[i-1],points[i]],depth:(points[i-1][2]+points[i][2])/2,line:true,stroke:item.color,width:item.width});
@@ -638,7 +641,8 @@ export function drawExerciseDemo(canvas, slug, phase) {
         panel([[-.48,1.27,.82],[.48,1.27,.82],[.48,1.44,1],[-.48,1.44,1]],'#253b50');
         panel([[-.20,1.31,.85],[.20,1.31,.85],[.20,1.40,.95],[-.20,1.40,.95]],'#416e8b','#76b5d6');
     }
-    const up=unit(sub(pose.neck,pose.pelvis)),right=[1,0,0];
+    const up=unit(sub(pose.neck,pose.pelvis));
+    const right=unit(sub(pose.right??[1,0,0],mul(up,dot(pose.right??[1,0,0],up))));
     const forward=mul(unit(cross(right,up)),pose.prone?-1:1),basis=[right,up,forward];
     const body=(height,x,depth)=>add(add(mix(pose.pelvis,pose.neck,height),[0,(pose.spineArch??0)*Math.sin(Math.PI*height),0]),add(mul(right,x),mul(forward,depth)));
     // Hand-authored slugs keep their original tinting; archetypes derive it.
@@ -681,7 +685,7 @@ export function drawExerciseDemo(canvas, slug, phase) {
         ellipsoid(arm.elbow,[.044,.046,.043]);
         bone(arm.elbow,arm.wrist,.047,.039);
         const handAxis=unit(sub(arm.wrist,arm.elbow)),handEnd=add(arm.wrist,mul(handAxis,.085));
-        if (['bird-dog','cat-cow','clap-push-up','close-grip-push-up'].includes(slug) && arm.wrist[1]<.12) {
+        if ((pose.palms || ['bird-dog','cat-cow','clap-push-up','close-grip-push-up'].includes(slug)) && (slug!=='clap-push-up' || arm.wrist[1]<.12)) {
             bone(arm.wrist,add(arm.wrist,[0,-.025,-.09]),.033,.018);
         } else if(slug==='clap-push-up') {
             ellipsoid(arm.wrist,[.018,.05,.03]);
@@ -694,13 +698,13 @@ export function drawExerciseDemo(canvas, slug, phase) {
                 const at=add(handEnd,[(finger-1.5)*.014,0,0]);bone(at,add(at,mul(handAxis,.037)),.007,.008);
             }
         }
-        if(!FORM_DEMOS.includes(slug) && (slug==='dumbbell-curl'||loadFor(slug)==='dumbbell')) {
+        if(!AUTHORED_LOADS.includes(slug) && (slug==='dumbbell-curl'||loadFor(slug)==='dumbbell')) {
             const a=add(arm.wrist,[-.095,0,0]),b=add(arm.wrist,[.095,0,0]);bone(a,b,.015,.015,[150,168,190]);
             for(const point of [a,b])ellipsoid(point,[.027,.068,.068],[77,92,119]);
         }
     });
     // A barbell spans both hands, so it is drawn once rather than per arm.
-    if(!FORM_DEMOS.includes(slug) && loadFor(slug)==='barbell' && pose.arms.length===2) {
+    if(!AUTHORED_LOADS.includes(slug) && loadFor(slug)==='barbell' && pose.arms.length===2) {
         const [left,right]=pose.arms.map((arm)=>arm.wrist);
         const axis=unit(sub(right,left)), outer=.30;
         const a=sub(left,mul(axis,outer)), b=add(right,mul(axis,outer));
