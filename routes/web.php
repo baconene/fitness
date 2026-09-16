@@ -90,6 +90,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dungeons', [HunterSystemController::class, 'dungeons'])->name('dungeons.index');
     Route::post('/dungeons/{dungeon}/enter', [HunterSystemController::class, 'enterDungeon'])->name('dungeons.enter');
     Route::post('/dungeons/runs/{run}/abandon', [HunterSystemController::class, 'abandonDungeon'])->name('dungeons.abandon');
+    Route::post('/bosses/{boss}/challenge', [HunterSystemController::class, 'challengeBoss'])->name('bosses.challenge');
 
     // Health measurements and goals
     Route::get('/health', [HealthController::class, 'index'])->name('health.index');

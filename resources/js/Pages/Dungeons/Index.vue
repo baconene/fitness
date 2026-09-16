@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import HunterLayout from '@/Layouts/HunterLayout.vue';
 import Icon from '@/Components/Icon.vue';
@@ -10,6 +11,34 @@ const props = defineProps({
     bosses: { type: Array, default: () => [] },
     encounter: { type: [Object, null], default: null },
 });
+
+const challenging = ref(null);
+const lastChallenged = ref(null);
+const challengeError = ref('');
+
+/**
+ * Starting an encounter only arms it; damage comes from completing workouts,
+ * so the page just needs to reflect that it is now active.
+ */
+const challengeBoss = (boss) => {
+    if (challenging.value) {
+        return;
+    }
+
+    challenging.value = boss.id;
+    lastChallenged.value = boss.id;
+    challengeError.value = '';
+
+    router.post(route('bosses.challenge', boss.id), {}, {
+        preserveScroll: true,
+        onError: (errors) => {
+            challengeError.value = Object.values(errors).flat().join(' ') || 'That boss could not be challenged.';
+        },
+        onFinish: () => {
+            challenging.value = null;
+        },
+    });
+};
 
 const runProgress = () => {
     if (!props.activeRun || !props.activeRun.dungeon) {
@@ -110,6 +139,31 @@ const abandon = () => {
                     <span class="sys-pill text-brand">+{{ boss.xp }} XP</span>
                 </div>
                 <p v-if="boss.description" class="mt-2 text-[12px] leading-relaxed text-muted">{{ boss.description }}</p>
+
+                <!-- Damage is dealt by completing workouts, so only one encounter runs at a time. -->
+                <div class="mt-3">
+                    <button
+                        v-if="boss.available && !encounter"
+                        type="button"
+                        class="sys-pill sys-pill-active min-h-9"
+                        :disabled="challenging === boss.id"
+                        @click="challengeBoss(boss)"
+                    >
+                        {{ challenging === boss.id ? 'Starting…' : 'Challenge' }}
+                        <Icon name="arrowRight" :size="12" />
+                    </button>
+                    <span v-else-if="encounter && encounter.boss_id === boss.id" class="sys-pill sys-pill-active">
+                        <Icon name="flame" :size="12" /> Engaged
+                    </span>
+                    <span v-else-if="encounter" class="text-[11px] text-muted">
+                        Finish your active encounter first.
+                    </span>
+                    <span v-else class="text-[11px] text-muted">Reach rank {{ boss.rank }} to challenge.</span>
+                </div>
+
+                <p v-if="challengeError && challenging === null && lastChallenged === boss.id" class="mt-2 text-[12px] text-danger">
+                    {{ challengeError }}
+                </p>
             </li>
         </ul>
         <p v-else class="sys-panel mb-8 p-8 text-center text-sm text-muted">No bosses available yet.</p>
