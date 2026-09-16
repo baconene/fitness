@@ -53,7 +53,6 @@ const LABELS = {
  */
 export const ARCHETYPES = {
     // ---- Chest ----
-    'bench_press': { motion: 'bench', load: 'barbell' },
     'incline-bench-press': { motion: 'bench', load: 'barbell', variant: 'incline' },
     'decline-bench-press': { motion: 'bench', load: 'barbell', variant: 'decline' },
     'incline-dumbbell-press': { motion: 'bench', load: 'dumbbell', variant: 'incline' },
@@ -203,6 +202,8 @@ export const loadFor = (slug) => ARCHETYPES[slug]?.load ?? null;
 
 /** Coaching line for an archetype-driven exercise. */
 const MOVEMENT_CUES = {
+    'pec-deck': 'sit against the back pad with forearms on the pads; bring your elbows together in front of your chest, then open with control.',
+    'toe-touch-crunch': 'keep legs raised over your hips with feet together and toes pointing toward your head; lift your shoulders to reach upward.',
     'rowing-machine': 'push through the footplates, lean back slightly, then pull the handle; return arms first, then bend your knees.',
     'shoulder-press': 'press the dumbbells overhead with a steady trunk, then lower toward shoulder height.',
     'stair-climber': 'alternate steps on the moving treads and use the rails lightly for balance.',
@@ -211,7 +212,7 @@ const MOVEMENT_CUES = {
     'seated-calf-raise': 'place thighs beneath the pad and toes on the platform; lift and lower your heels with control.',
     'pull-up': 'hold the fixed overhead bar, pull your chin toward bar height, and lower with control.',
     'swimming': 'alternate freestyle arm strokes with a small flutter kick and gentle torso rotation.',
-    't-bar-row': 'hinge at the hips with a steady back, pull the anchored bar toward your trunk, and lower with control.',
+    't-bar-row': 'hinge at the hips with a steady back, straddle the bar with its anchor behind you and pull the handle toward your lower chest, and lower with control.',
     'thoracic-rotation': 'start on hands and knees, place one hand beside your head, and open that elbow while keeping hips steady.',
     'triceps-bench-dip': 'keep palms on the bench and feet grounded; bend your elbows to lower, then press up.',
     'glute-bridge': 'keep shoulders and feet grounded, raise your hips into alignment with your thighs, then lower with control.',

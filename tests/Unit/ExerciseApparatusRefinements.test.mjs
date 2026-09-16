@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { exercisePose, exerciseCamera } from '../../resources/js/Support/exerciseDemoScene.js';
 import { exerciseEquipment } from '../../resources/js/Support/exerciseCorrections.js';
-import { APPARATUS_DEMOS } from '../../resources/js/Support/exerciseApparatusRefinements.js';
+import { APPARATUS_DEMOS, FORM_REVIEW_DEMOS } from '../../resources/js/Support/exerciseApparatusRefinements.js';
 import { demoFor } from '../../resources/js/Support/exerciseDemos.js';
 
 const distance = (a, b) => Math.hypot(...a.map((v, i) => v - b[i]));
@@ -30,7 +30,7 @@ test('refined movements preserve anatomy, clear the floor, and loop without a ju
                 if (point[1] < .025) failures.push(`${slug} frame ${frame} below floor ${point[1]}`);
             }
         }
-        assert.match(demoFor(slug).gif, /apparatus-8/);
+        assert.match(demoFor(slug).gif, FORM_REVIEW_DEMOS.includes(slug) ? /form-9/ : /apparatus-8/);
     }
     assert.deepEqual([...new Set(failures.map(f => f.replace(/frame \d+/, 'frame')))], []);
 });
@@ -57,8 +57,8 @@ test('equipment supports stay attached throughout the movement', () => {
         const seat = equipment.find(e => e.role === 'sliding-seat');
         assert.ok(Math.abs((seat.points[0][2] + seat.points[2][2]) / 2 - row.pelvis[2]) < 1e-8);
         const bar = exerciseEquipment(exercisePose('t-bar-row', phase), 't-bar-row', phase).find(e => e.role === 'anchored-bar');
-        assert.deepEqual(bar.points[0], [0, .055, 1.75]);
-        assert.ok(Math.abs(distance(...bar.points) - 1.85) < 1e-8);
+        assert.deepEqual(bar.points[0], [0, .055, -1.35]);
+        assert.ok(Math.abs(distance(...bar.points) - 1.98) < 1e-8);
     }
 });
 

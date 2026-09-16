@@ -2,7 +2,8 @@
 import { motionGeometry as g } from './exerciseMotionRefinements.js';
 const { sides, add, sub, mul, unit, mix, cycle, bend, arm, leg, trunk, feet, sample } = g;
 const tau = Math.PI * 2;
-export const APPARATUS_DEMOS = ['rowing-machine', 'shoulder-press', 'stair-climber', 'skull-crusher', 'mountain-climber', 'seated-calf-raise', 'pull-up', 'swimming', 't-bar-row', 'thoracic-rotation', 'triceps-bench-dip', 'glute-bridge', 'burpee'];
+export const APPARATUS_DEMOS = ['rowing-machine', 'shoulder-press', 'stair-climber', 'skull-crusher', 'mountain-climber', 'seated-calf-raise', 'pull-up', 'swimming', 't-bar-row', 'thoracic-rotation', 'triceps-bench-dip', 'glute-bridge', 'burpee', 'pec-deck', 'toe-touch-crunch'];
+export const FORM_REVIEW_DEMOS = ['t-bar-row', 'pec-deck', 'toe-touch-crunch', 'mountain-climber', 'burpee'];
 
 export function apparatusPose(pose, slug, phase) {
     const t = (1 - Math.cos(tau * phase)) / 2;
@@ -27,6 +28,24 @@ export function apparatusPose(pose, slug, phase) {
     } else if (slug === 'pull-up') {
         trunk(pose, [0, 1.12 + .42 * t, 0]); feet(pose, .14, .02, .285 + .42 * t);
         pose.arms = pose.arms.map((a, i) => arm(a.shoulder, [sides[i] * .31, 2.20, 0], sides[i], [sides[i], -.4, .15]));
+    } else if (slug === 'pec-deck') {
+        trunk(pose, [0, .62, -.04]);
+        pose.legs = sides.map(side => leg([side * .12, .62, -.04], [side * .17, .08, .46], [0, 1, 0]));
+        const sweep = .10 + 2.0 * t;
+        pose.arms = pose.arms.map((a, i) => {
+            const elbow = add(a.shoulder, [sides[i] * .30 * Math.cos(sweep), 0, .30 * Math.sin(sweep)]);
+            return { shoulder: a.shoulder, elbow, wrist: add(elbow, [0, .28, 0]) };
+        });
+    } else if (slug === 'toe-touch-crunch') {
+        pose.horizontal = true; pose.grip = false;
+        const angle = .02 + .35 * t;
+        trunk(pose, [0, .14, .20], [0, Math.sin(angle), -Math.cos(angle)]);
+        pose.legs = sides.map(side => {
+            const hip = add(pose.pelvis, [side * .12, 0, 0]);
+            return { hip, knee: add(hip, [0, .43, 0]), ankle: add(hip, [0, .86, 0]) };
+        });
+        pose.footTips = pose.legs.map(l => add(l.ankle, [0, 0, -.15]));
+        pose.arms = pose.arms.map((a, i) => arm(a.shoulder, add(a.shoulder, [0, .448, .336]), sides[i], [sides[i], 0, 0]));
     } else if (slug === 'seated-calf-raise') {
         trunk(pose, [0, .61, 0]);
         const angle = .20 + .70 * t;
@@ -47,13 +66,16 @@ export function apparatusPose(pose, slug, phase) {
         pose.arms = pose.arms.map((a, i) => arm(a.shoulder, [sides[i] * .34, 1.58, .48], sides[i], [sides[i], -.8, 0]));
     } else if (slug === 'mountain-climber') {
         pose.prone = true; pose.palms = true;
-        const axis = unit([0, .29, -.957]);
-        trunk(pose, [0, .35, .17], axis);
+        const axis = unit([0, .16, -.987]);
+        trunk(pose, [0, .52, .17], axis);
         pose.arms = pose.arms.map((a, i) => arm(a.shoulder, [sides[i] * .25, .065, -.37], sides[i], [sides[i], .2, .7]));
         pose.legs = sides.map((side, i) => {
-            const drive = Math.max(0, Math.sin(tau * phase + i * Math.PI));
-            const hip = add(pose.pelvis, [side * .12, 0, 0]), ankle = [side * .15, .08 + .08 * drive, .96 - 1.05 * drive];
-            return leg(hip, ankle, [0, 1, -1]);
+            const drive = Math.max(0, Math.sin(tau * phase + i * Math.PI)) ** 2;
+            const hip = add(pose.pelvis, [side * .12, 0, 0]), angle = 1.15 - 2.20 * drive;
+            const knee = add(hip, [0, -.43 * Math.cos(angle), .43 * Math.sin(angle)]);
+            const ankleY = .08 + .06 * drive;
+            const ankle = [hip[0], ankleY, knee[2] + Math.sqrt(.43 ** 2 - (knee[1] - ankleY) ** 2)];
+            return { hip, knee, ankle };
         });
     } else if (slug === 'swimming') {
         pose.prone = true; pose.horizontal = true;
@@ -72,7 +94,7 @@ export function apparatusPose(pose, slug, phase) {
         pose.footTips = pose.legs.map(l => add(l.ankle, [0, 0, .15]));
     } else if (slug === 't-bar-row') {
         trunk(pose, [0, .87, -.15], unit([0, .62, .785])); feet(pose, .25);
-        const angle = .36 + .18 * t, pivot = [0, .055, 1.75], grip = add(pivot, [0, 1.75 * Math.sin(angle), -1.75 * Math.cos(angle)]);
+        const angle = .40 + .20 * t, pivot = [0, .055, -1.35], grip = add(pivot, [0, 1.75 * Math.sin(angle), 1.75 * Math.cos(angle)]);
         pose.arms = pose.arms.map((a, i) => arm(a.shoulder, add(grip, [sides[i] * .08, 0, 0]), sides[i], [sides[i], -.3, -1]));
     } else if (slug === 'thoracic-rotation') {
         pose.prone = true; pose.palms = true;
@@ -98,11 +120,11 @@ export function apparatusPose(pose, slug, phase) {
         const [hipY, hipZ, tilt, ankleZ, ankleY, handY, handZ] = sample([
             [0, .94, 0, 0, .05, .08, .90, .05],
             [.12, .40, -.05, 1.25, .05, .08, .065, .55],
-            [.20, .39, -.16, 1.22, -.48, .20, .065, .55],
-            [.28, .346, -.214, 1.245, -1, .08, .065, .55],
-            [.39, .21, -.175, 1.46, -1, .08, .065, .55],
-            [.50, .346, -.214, 1.245, -1, .08, .065, .55],
-            [.57, .39, -.16, 1.22, -.48, .20, .065, .55],
+            [.20, .62, -.16, 1.62, -.48, .20, .065, .55],
+            [.28, .346, -.214, 1.245, -1.035, .08, .065, .55],
+            [.39, .21, -.175, 1.46, -1.025, .08, .065, .55],
+            [.50, .346, -.214, 1.245, -1.035, .08, .065, .55],
+            [.57, .62, -.16, 1.62, -.48, .20, .065, .55],
             [.64, .40, -.05, 1.25, .05, .08, .065, .55],
             [.78, 1.19, 0, 0, .05, .33, 2.22, .07],
             [.89, .80, -.06, .15, .05, .08, 1.15, .24],
@@ -110,7 +132,10 @@ export function apparatusPose(pose, slug, phase) {
         ], phase);
         trunk(pose, [0, hipY, hipZ], [0, Math.cos(tilt), Math.sin(tilt)]);
         feet(pose, .18, ankleZ, ankleY);
-        pose.legs.forEach(l => { l.knee = bend(l.hip, l.ankle, .43, .43, [0, 1, 1]); });
+        pose.legs.forEach(l => {
+            const delta = sub(l.ankle, l.hip);
+            l.knee = bend(l.hip, l.ankle, .43, .43, [0, delta[2], -delta[1]]);
+        });
         pose.arms = pose.arms.map((a, i) => arm(a.shoulder, [sides[i] * .25, handY, handZ], sides[i], [sides[i] * .65, .55, -.6]));
         pose.palms = handY < .12;
     }
@@ -133,7 +158,7 @@ export function apparatusEquipment(pose, slug, phase) {
         line([add(center, [0, 0, -.10]), add(center, [0, 0, .10])], 'grip', 3, '#c4d5e6');
         for (const sign of sides) ball(add(center, [0, 0, sign * .10]), [.065, .065, .03]);
     };
-    if (['glute-bridge', 'thoracic-rotation', 'mountain-climber', 'burpee'].includes(slug)) face([[-.50, -.008, -1.30], [.50, -.008, -1.30], [.50, -.008, 1.30], [-.50, -.008, 1.30]], 'ground', '#101e2c');
+    if (['glute-bridge', 'thoracic-rotation', 'mountain-climber', 'burpee', 'toe-touch-crunch'].includes(slug)) face([[-.50, -.008, -1.30], [.50, -.008, -1.30], [.50, -.008, 1.30], [-.50, -.008, 1.30]], 'ground', '#101e2c');
     if (['shoulder-press', 'skull-crusher'].includes(slug)) pose.arms.forEach(a => dumbbell(a.wrist));
     if (slug === 'skull-crusher') pad(.49, -.75, .38);
     if (slug === 'pull-up') {
@@ -171,6 +196,22 @@ export function apparatusEquipment(pose, slug, phase) {
         }
         face([[-.20, 1.66, .56], [.20, 1.66, .56], [.20, 1.82, .70], [-.20, 1.82, .70]], 'display', '#335676');
     }
+    if (slug === 'pec-deck') {
+        pad(.50, -.30, .10, .24, 'seat');
+        face([[-.24, .55, -.16], [.24, .55, -.16], [.24, 1.30, -.16], [-.24, 1.30, -.16]], 'back-pad', '#2b4358');
+        line([[0, .04, -.30], [0, .60, -.30], [0, 1.65, -.30]], 'frame', 5);
+        line([[-.34, .04, -.30], [.34, .04, -.30]], 'base');
+        pose.arms.forEach(a => {
+            const pivot = [a.shoulder[0], 1.65, a.shoulder[2]], end = [a.elbow[0], 1.65, a.elbow[2]];
+            line([pivot, end, a.elbow], 'swing-arm', 4);
+            ball(add(a.elbow, [0, .13, .035]), [.06, .15, .045], 'forearm-pad', [51, 72, 94]);
+            line([a.wrist, add(a.wrist, [0, 0, .08])], 'grip', 4);
+            line([[0, 1.65, -.30], pivot], 'frame', 4);
+        });
+        for (const y of [.86, .98, 1.10]) {
+            face([[-.20, y, -.52], [.20, y, -.52], [.20, y + .09, -.52], [-.20, y + .09, -.52]], 'weight-stack', '#25394c');
+        }
+    }
     if (slug === 'seated-calf-raise') {
         pad(.50, -.24, .12, .25, 'seat');
         pad(.115, .49, .65, .35, 'toe-platform');
@@ -182,11 +223,11 @@ export function apparatusEquipment(pose, slug, phase) {
         pose.arms.forEach(a => line([add(a.wrist, [0, -.08, 0]), a.wrist], 'handle', 4));
     }
     if (slug === 't-bar-row') {
-        const pivot = [0, .055, 1.75], grip = mix(pose.arms[0].wrist, pose.arms[1].wrist, .5), axis = unit(sub(grip, pivot));
-        line([pivot, add(grip, mul(axis, .10))], 'anchored-bar', 4, '#b7cde1');
+        const pivot = [0, .055, -1.35], grip = mix(pose.arms[0].wrist, pose.arms[1].wrist, .5), axis = unit(sub(grip, pivot));
+        line([pivot, add(grip, mul(axis, .23))], 'anchored-bar', 4, '#b7cde1');
         line(pose.arms.map(a => a.wrist), 'handle', 5);
-        ball(add(grip, mul(axis, -.27)), [.18, .045, .18], 'weight', [63, 84, 109], [[1, 0, 0], axis, [0, -axis[2], axis[1]]]);
-        face([[-.22, .01, 1.56], [.22, .01, 1.56], [.22, .01, 1.92], [-.22, .01, 1.92]], 'anchor');
+        ball(add(grip, mul(axis, .10)), [.18, .045, .18], 'weight', [63, 84, 109], [[1, 0, 0], axis, [0, -axis[2], axis[1]]]);
+        face([[-.22, .01, -1.54], [.22, .01, -1.54], [.22, .01, -1.18], [-.22, .01, -1.18]], 'anchor');
     }
     if (slug === 'swimming') {
         face([[-.65, .39, -1.55], [.65, .39, -1.55], [.65, .39, 1.50], [-.65, .39, 1.50]], 'ground', '#122c40');
