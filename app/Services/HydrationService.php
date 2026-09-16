@@ -109,6 +109,51 @@ class HydrationService
     }
 
     /**
+     * Daily totals for the last `$days` days, oldest first, including days with
+     * nothing logged so the series has no gaps to plot around.
+     *
+     * @return array<int, array{date: string, label: string, litres: float, percent: int, met: bool}>
+     */
+    public function history(User $user, int $days = 7): array
+    {
+        $target = $this->targetMl($user);
+        $timezone = $user->timezone();
+        $series = [];
+
+        for ($offset = $days - 1; $offset >= 0; $offset--) {
+            $day = now()->setTimezone($timezone)->subDays($offset);
+            $consumed = $this->totalForDay($user, $day);
+
+            $series[] = [
+                'date' => $day->toDateString(),
+                'label' => $day->format('D'),
+                'litres' => round($consumed / 1000, 2),
+                'percent' => $target > 0 ? min(100, (int) round($consumed / $target * 100)) : 0,
+                'met' => $consumed >= $target,
+            ];
+        }
+
+        return $series;
+    }
+
+    /**
+     * @return array{targetLitres: float, averageLitres: float, daysMet: int, days: int, series: array<int, array<string, mixed>>}
+     */
+    public function historySummary(User $user, int $days = 7): array
+    {
+        $series = $this->history($user, $days);
+        $logged = array_column($series, 'litres');
+
+        return [
+            'targetLitres' => round($this->targetMl($user) / 1000, 2),
+            'averageLitres' => $logged === [] ? 0.0 : round(array_sum($logged) / count($logged), 2),
+            'daysMet' => count(array_filter($series, fn (array $day): bool => $day['met'])),
+            'days' => $days,
+            'series' => $series,
+        ];
+    }
+
+    /**
      * UTC bounds of the user-local calendar day containing `$moment`.
      *
      * @return array{0: Carbon, 1: Carbon}

@@ -25,6 +25,10 @@ class HealthController extends Controller
             'goals' => $user->fitnessGoals()->orderByDesc('is_primary')->latest()->get(),
             'goalTypes' => array_map(fn (GoalType $type): array => ['value' => $type->value, 'label' => ucwords(str_replace('_', ' ', $type->value))], GoalType::cases()),
             'today' => now($user->timezone())->toDateString(),
+            'hydration' => array_merge(
+                app(HydrationService::class)->summary($user),
+                ['history' => app(HydrationService::class)->historySummary($user)],
+            ),
         ]);
     }
 

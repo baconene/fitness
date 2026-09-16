@@ -192,4 +192,53 @@ class HydrationTest extends TestCase
 
         $this->assertSame(3, (int) $user->userQuests()->with('progress')->firstOrFail()->progress->current_value);
     }
+
+    public function test_history_covers_every_day_including_the_empty_ones(): void
+    {
+        $user = $this->awakenedUser();
+        WaterLog::factory()->for($user)->create(['amount_ml' => 1500, 'logged_at' => now()]);
+        WaterLog::factory()->for($user)->create(['amount_ml' => 3000, 'logged_at' => now()->subDays(2)]);
+
+        $history = app(HydrationService::class)->history($user, 7);
+
+        $this->assertCount(7, $history, 'A gap-free series keeps the chart honest.');
+        $this->assertSame(now()->subDays(6)->toDateString(), $history[0]['date'], 'Oldest first.');
+        $this->assertSame(now()->toDateString(), $history[6]['date']);
+        $this->assertSame(1.5, $history[6]['litres']);
+        $this->assertSame(3.0, $history[4]['litres']);
+        $this->assertSame(0.0, $history[5]['litres'], 'A day with nothing logged still appears.');
+        $this->assertTrue($history[4]['met'], '3L meets the default 3L target.');
+        $this->assertFalse($history[6]['met']);
+    }
+
+    public function test_history_summary_averages_across_the_whole_window(): void
+    {
+        $user = $this->awakenedUser();
+        WaterLog::factory()->for($user)->create(['amount_ml' => 3500, 'logged_at' => now()]);
+
+        $summary = app(HydrationService::class)->historySummary($user, 7);
+
+        $this->assertSame(7, $summary['days']);
+        $this->assertSame(1, $summary['daysMet']);
+        $this->assertSame(3.0, $summary['targetLitres']);
+        // 3.5L over seven days, six of them empty.
+        $this->assertSame(0.5, $summary['averageLitres']);
+    }
+
+    public function test_the_health_page_exposes_the_hydration_trend(): void
+    {
+        $user = $this->awakenedUser();
+        WaterLog::factory()->for($user)->create(['amount_ml' => 1000, 'logged_at' => now()]);
+
+        $this->actingAs($user)
+            ->get(route('health.index'))
+            ->assertStatus(200)
+            ->assertInertia(
+                fn ($page) => $page->has('hydration.history.series', 7)
+                    ->where('hydration.consumedLitres', 1)
+                    ->where('hydration.history.days', 7)
+                    ->has('hydration.history.averageLitres')
+                    ->has('hydration.history.daysMet')
+            );
+    }
 }

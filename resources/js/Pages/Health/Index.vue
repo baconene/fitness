@@ -9,6 +9,7 @@ const props = defineProps({
     goals: { type: Array, default: () => [] },
     goalTypes: { type: Array, default: () => [] },
     today: { type: String, required: true },
+    hydration: { type: Object, default: null },
 });
 
 const UNITS = ['kg', 'km', 'minutes', 'sessions', 'reps', '%'];
@@ -197,6 +198,55 @@ const history = computed(() => [...props.measurements].reverse());
                     </form>
                 </section>
             </div>
+
+            <!-- Hydration trend -->
+            <section v-if="hydration" class="sys-panel sys-corners p-5 sm:p-6">
+                <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+                    <div>
+                        <p class="ui-eyebrow mb-1 text-brand">Hydration</p>
+                        <h2 class="sys-label">Last {{ hydration.history.days }} days</h2>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="sys-pill">Target {{ hydration.history.targetLitres.toFixed(1) }} L</span>
+                        <span class="sys-pill">Avg {{ hydration.history.averageLitres.toFixed(1) }} L</span>
+                        <span class="sys-pill" :class="hydration.history.daysMet ? 'sys-pill-active' : ''">
+                            {{ hydration.history.daysMet }}/{{ hydration.history.days }} met
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Column per day, scaled against the daily target -->
+                <ol class="flex items-end justify-between gap-2" :aria-label="`Water intake over the last ${hydration.history.days} days`">
+                    <li
+                        v-for="day in hydration.history.series"
+                        :key="day.date"
+                        class="flex min-w-0 flex-1 flex-col items-center gap-2"
+                    >
+                        <span class="text-[11px] tabular-nums text-muted">{{ day.litres }}</span>
+                        <div class="flex h-24 w-full items-end justify-center">
+                            <div
+                                class="w-full max-w-8 rounded-t transition-[height] duration-500"
+                                :class="day.met ? 'bg-success' : day.percent ? 'bg-brand' : 'bg-edge/15'"
+                                :style="{ height: Math.max(3, day.percent) + '%' }"
+                                :title="`${day.date}: ${day.litres} L (${day.percent}%)`"
+                            />
+                        </div>
+                        <span
+                            class="text-[11px] uppercase tracking-wider"
+                            :class="day.date === today ? 'text-brand' : 'text-muted'"
+                        >
+                            {{ day.label }}
+                        </span>
+                    </li>
+                </ol>
+
+                <p class="mt-4 text-[12px] leading-relaxed text-muted">
+                    Today you have logged
+                    <span class="tabular-nums text-content/85">{{ hydration.consumedLitres }} L</span>
+                    of {{ hydration.targetLitres.toFixed(1) }} L. Log water from the dashboard card; your target
+                    scales with your most recent recorded weight.
+                </p>
+            </section>
 
             <section class="sys-panel p-5 sm:p-6">
                 <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
