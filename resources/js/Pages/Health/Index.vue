@@ -10,7 +10,17 @@ const props = defineProps({
     goalTypes: { type: Array, default: () => [] },
     today: { type: String, required: true },
     hydration: { type: Object, default: null },
+    nutrition: { type: Object, default: null },
+    steps: { type: Object, default: null },
 });
+
+const stepForm = useForm({ steps: null });
+
+const saveSteps = () =>
+    stepForm.post(route('health.steps.store'), {
+        preserveScroll: true,
+        onSuccess: () => stepForm.reset(),
+    });
 
 const UNITS = ['kg', 'km', 'minutes', 'sessions', 'reps', '%'];
 
@@ -245,6 +255,127 @@ const history = computed(() => [...props.measurements].reverse());
                     <span class="tabular-nums text-content/85">{{ hydration.consumedLitres }} L</span>
                     of {{ hydration.targetLitres.toFixed(1) }} L. Log water from the dashboard card; your target
                     scales with your most recent recorded weight.
+                </p>
+            </section>
+
+            <!-- Steps -->
+            <section v-if="steps" class="sys-panel sys-corners p-5 sm:p-6">
+                <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+                    <div>
+                        <p class="ui-eyebrow mb-1 text-success">Movement</p>
+                        <h2 class="sys-label">Daily steps</h2>
+                    </div>
+                    <form class="flex items-end gap-2" @submit.prevent="saveSteps">
+                        <label class="block">
+                            <span class="mb-1 block text-[11px] text-muted">Today's count</span>
+                            <input
+                                v-model.number="stepForm.steps"
+                                type="number"
+                                min="0"
+                                max="200000"
+                                inputmode="numeric"
+                                :placeholder="String(steps.today || 0)"
+                                class="w-28 rounded-md border border-edge/20 bg-canvas px-3 py-2 text-center text-[14px] tabular-nums text-content focus:border-brand"
+                            />
+                        </label>
+                        <button type="submit" class="sys-pill sys-pill-active min-h-10" :disabled="stepForm.processing">
+                            {{ stepForm.processing ? 'Saving…' : 'Record' }}
+                        </button>
+                    </form>
+                </div>
+
+                <div class="mb-4 flex items-center gap-3">
+                    <div class="sys-track flex-1">
+                        <div class="sys-fill" :style="{ width: steps.percent + '%' }" />
+                    </div>
+                    <span class="text-[12px] tabular-nums text-muted">
+                        {{ steps.today.toLocaleString() }} / {{ steps.target.toLocaleString() }}
+                    </span>
+                </div>
+
+                <ol class="flex items-end justify-between gap-2" aria-label="Steps over the last seven days">
+                    <li
+                        v-for="day in steps.series"
+                        :key="day.date"
+                        class="flex min-w-0 flex-1 flex-col items-center gap-2"
+                    >
+                        <span class="text-[11px] tabular-nums text-muted">{{ day.steps ? Math.round(day.steps / 100) / 10 + 'k' : '—' }}</span>
+                        <div class="flex h-20 w-full items-end justify-center">
+                            <div
+                                class="w-full max-w-8 rounded-t transition-[height] duration-500"
+                                :class="day.percent >= 100 ? 'bg-success' : day.steps ? 'bg-brand' : 'bg-edge/15'"
+                                :style="{ height: Math.max(3, day.percent) + '%' }"
+                                :title="`${day.date}: ${day.steps} steps`"
+                            />
+                        </div>
+                        <span
+                            class="text-[11px] uppercase tracking-wider"
+                            :class="day.date === today ? 'text-brand' : 'text-muted'"
+                        >
+                            {{ day.label }}
+                        </span>
+                    </li>
+                </ol>
+
+                <p class="mt-4 text-[12px] leading-relaxed text-muted">
+                    A step count is the running total for the day, so recording again replaces it.
+                    This feeds the daily step mission.
+                </p>
+            </section>
+
+            <!-- Calorie trend -->
+            <section v-if="nutrition" class="sys-panel sys-corners p-5 sm:p-6">
+                <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+                    <div>
+                        <p class="ui-eyebrow mb-1 text-orange-400">Nutrition</p>
+                        <h2 class="sys-label">Last {{ nutrition.history.days }} days</h2>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="sys-pill">Target {{ nutrition.history.targetCalories.toLocaleString() }} kcal</span>
+                        <span v-if="nutrition.history.daysLogged" class="sys-pill">
+                            Avg {{ nutrition.history.averageCalories.toLocaleString() }}
+                        </span>
+                        <span class="sys-pill" :class="nutrition.history.daysLogged ? 'sys-pill-active' : ''">
+                            {{ nutrition.history.daysLogged }}/{{ nutrition.history.days }} logged
+                        </span>
+                    </div>
+                </div>
+
+                <ol
+                    class="flex items-end justify-between gap-2"
+                    :aria-label="`Calories logged over the last ${nutrition.history.days} days`"
+                >
+                    <li
+                        v-for="day in nutrition.history.series"
+                        :key="day.date"
+                        class="flex min-w-0 flex-1 flex-col items-center gap-2"
+                    >
+                        <span class="text-[11px] tabular-nums text-muted">{{ day.calories || '—' }}</span>
+                        <div class="flex h-24 w-full items-end justify-center">
+                            <div
+                                class="w-full max-w-8 rounded-t transition-[height] duration-500"
+                                :class="day.over ? 'bg-danger' : day.calories ? 'bg-orange-400' : 'bg-edge/15'"
+                                :style="{ height: Math.max(3, day.percent) + '%' }"
+                                :title="`${day.date}: ${day.calories} kcal (${day.percent}%)`"
+                            />
+                        </div>
+                        <span
+                            class="text-[11px] uppercase tracking-wider"
+                            :class="day.date === today ? 'text-brand' : 'text-muted'"
+                        >
+                            {{ day.label }}
+                        </span>
+                    </li>
+                </ol>
+
+                <p class="mt-4 text-[12px] leading-relaxed text-muted">
+                    <template v-if="nutrition.history.daysLogged">
+                        The average covers only the {{ nutrition.history.daysLogged }} day<template
+                            v-if="nutrition.history.daysLogged !== 1"
+                        >s</template>
+                        with meals recorded. Log meals from the dashboard card.
+                    </template>
+                    <template v-else>Nothing logged yet. Record meals from the dashboard card.</template>
                 </p>
             </section>
 

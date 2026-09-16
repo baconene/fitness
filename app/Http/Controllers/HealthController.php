@@ -9,6 +9,7 @@ use App\Models\WaterLog;
 use App\Services\HydrationService;
 use App\Services\NutritionService;
 use App\Services\QuestGenerationService;
+use App\Services\StepTrackingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +32,11 @@ class HealthController extends Controller
                 app(HydrationService::class)->summary($user),
                 ['history' => app(HydrationService::class)->historySummary($user)],
             ),
+            'nutrition' => array_merge(
+                app(NutritionService::class)->dayFor($user),
+                ['history' => app(NutritionService::class)->historySummary($user)],
+            ),
+            'steps' => app(StepTrackingService::class)->summary($user),
         ]);
     }
 
@@ -99,6 +105,23 @@ class HealthController extends Controller
         $nutrition->delete($request->user(), $foodLog);
 
         return back()->with('success', 'Entry removed.');
+    }
+
+    /**
+     * Records the day's step count. A count is a running total, so logging
+     * again for the same day replaces it rather than adding.
+     */
+    public function storeStepLog(Request $request, StepTrackingService $steps, QuestGenerationService $quests): RedirectResponse
+    {
+        $data = $request->validate([
+            'steps' => ['required', 'integer', 'between:0,200000'],
+            'counted_on' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:'.now($request->user()->timezone())->toDateString()],
+        ]);
+
+        $steps->record($request->user(), $data['steps'], $data['counted_on'] ?? null);
+        $quests->synchronizeProgress($request->user());
+
+        return back()->with('success', 'Steps recorded.');
     }
 
     public function storeGoal(Request $request): RedirectResponse

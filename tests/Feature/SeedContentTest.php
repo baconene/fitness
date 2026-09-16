@@ -26,6 +26,7 @@ class SeedContentTest extends TestCase
         'ActiveDays',
         'TrainingMinutes',
         'DistanceKm',
+        'Steps',
     ];
 
     private function seedContent(): void
@@ -109,14 +110,19 @@ class SeedContentTest extends TestCase
         $this->assertEmpty($unsupported, 'Unprogressable missions are active: '.$unsupported->keys()->implode(', '));
     }
 
-    public function test_the_step_mission_is_retired_because_steps_are_not_tracked(): void
+    /**
+     * The step mission shipped deactivated while nothing recorded steps. Step
+     * logging now exists, so it is handed out again.
+     */
+    public function test_the_step_mission_is_active_now_that_steps_are_recorded(): void
     {
         $this->seedContent();
 
-        QuestTemplate::where('slug', 'reach-8000-steps')->update(['is_active' => true]);
-        $this->seed(QuestTemplateSeeder::class);
+        $mission = QuestTemplate::where('slug', 'reach-8-000-steps')
+            ->orWhere('target_metric', 'Steps')->first();
 
-        $this->assertFalse((bool) QuestTemplate::where('slug', 'reach-8000-steps')->value('is_active'));
+        $this->assertNotNull($mission, 'A step mission should ship.');
+        $this->assertTrue((bool) $mission->is_active);
     }
 
     public function test_missions_cover_both_daily_and_weekly_cadences(): void

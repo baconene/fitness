@@ -135,6 +135,52 @@ class FoodLoggingTest extends TestCase
         $this->assertSame(0, $this->day($user)['calories']);
     }
 
+    public function test_history_covers_every_day_including_the_empty_ones(): void
+    {
+        $user = $this->hunter();
+        FoodLog::factory()->for($user)->create(['calories' => 1800, 'logged_at' => now()]);
+        FoodLog::factory()->for($user)->create(['calories' => 2200, 'logged_at' => now()->subDays(2)]);
+
+        $history = app(NutritionService::class)->historySummary($user->fresh(), 7);
+
+        $this->assertCount(7, $history['series']);
+        $this->assertSame(now()->subDays(6)->toDateString(), $history['series'][0]['date'], 'Oldest first.');
+        $this->assertSame(1800, $history['series'][6]['calories']);
+        $this->assertSame(2200, $history['series'][4]['calories']);
+        $this->assertSame(0, $history['series'][5]['calories'], 'A day with nothing logged still appears.');
+    }
+
+    /**
+     * A day with no meals is missing data, not a day of eating nothing.
+     * Averaging it in would drag the figure to something meaningless.
+     */
+    public function test_the_average_covers_only_days_actually_logged(): void
+    {
+        $user = $this->hunter();
+        FoodLog::factory()->for($user)->create(['calories' => 2000, 'logged_at' => now()]);
+        FoodLog::factory()->for($user)->create(['calories' => 3000, 'logged_at' => now()->subDay()]);
+
+        $history = app(NutritionService::class)->historySummary($user->fresh(), 7);
+
+        $this->assertSame(2, $history['daysLogged']);
+        $this->assertSame(2500, $history['averageCalories'], 'Averaged over two logged days, not seven.');
+    }
+
+    public function test_the_health_page_exposes_the_calorie_trend(): void
+    {
+        $user = $this->hunter();
+        FoodLog::factory()->for($user)->create(['calories' => 700, 'logged_at' => now()]);
+
+        $this->actingAs($user)
+            ->get(route('health.index'))
+            ->assertStatus(200)
+            ->assertInertia(
+                fn ($page) => $page->has('nutrition.history.series', 7)
+                    ->where('nutrition.history.daysLogged', 1)
+                    ->has('nutrition.history.targetCalories')
+            );
+    }
+
     public function test_the_dashboard_serves_intake_against_the_target(): void
     {
         $user = $this->hunter();

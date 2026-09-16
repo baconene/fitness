@@ -13,7 +13,8 @@ class QuestTemplateSeeder extends Seeder
      * `target_metric` must be one QuestGenerationService::synchronizeProgress()
      * knows how to compute, otherwise the mission is generated but can never
      * progress. Supported today: WorkoutsCompleted, MeasurementsLogged,
-     * PersonalRecords, WaterLitres, ActiveDays, TrainingMinutes, DistanceKm.
+     * PersonalRecords, WaterLitres, ActiveDays, TrainingMinutes, DistanceKm,
+     * Steps.
      */
     public function run(): void
     {
@@ -23,18 +24,6 @@ class QuestTemplateSeeder extends Seeder
 
             QuestTemplate::updateOrCreate(['slug' => $template['slug']], $template);
         }
-
-        $this->retireUnsupportedTemplates();
-    }
-
-    /**
-     * Steps are not recorded anywhere in the app, so this mission could be
-     * assigned but never completed. Deactivating keeps existing rows intact
-     * while stopping it from being handed out again.
-     */
-    private function retireUnsupportedTemplates(): void
-    {
-        QuestTemplate::whereIn('slug', ['reach-8000-steps'])->update(['is_active' => false]);
     }
 
     /**
@@ -50,6 +39,7 @@ class QuestTemplateSeeder extends Seeder
             ['name' => 'Log a body measurement', 'quest_type' => 'Daily', 'category' => 'Tracking', 'difficulty' => 'Easy', 'target_metric' => 'MeasurementsLogged', 'target_value' => 1, 'xp_reward_base' => 20],
             ['name' => 'Train for 30 minutes', 'quest_type' => 'Daily', 'category' => 'Conditioning', 'difficulty' => 'Medium', 'target_metric' => 'TrainingMinutes', 'target_value' => 30, 'xp_reward_base' => 45, 'stat_reward' => ['endurance' => 1]],
             ['name' => 'Cover 3km', 'quest_type' => 'Daily', 'category' => 'Conditioning', 'difficulty' => 'Medium', 'target_metric' => 'DistanceKm', 'target_value' => 3, 'xp_reward_base' => 40, 'stat_reward' => ['endurance' => 1]],
+            ['name' => 'Reach 8,000 steps', 'quest_type' => 'Daily', 'category' => 'Conditioning', 'difficulty' => 'Medium', 'target_metric' => 'Steps', 'target_value' => 8000, 'xp_reward_base' => 40, 'stat_reward' => ['endurance' => 1]],
 
             // ---- Weekly ----
             ['name' => 'Train four times this week', 'quest_type' => 'Weekly', 'category' => 'Training', 'difficulty' => 'Hard', 'target_metric' => 'WorkoutsCompleted', 'target_value' => 4, 'xp_reward_base' => 220, 'stat_reward' => ['strength' => 1, 'endurance' => 1]],

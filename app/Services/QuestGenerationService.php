@@ -177,6 +177,11 @@ class QuestGenerationService
                     ->selectRaw('date(completed_at) d')->distinct()->get()->count(),
                 'trainingminutes' => (int) floor($this->completedSets($user, $start, $end)->sum('duration_seconds') / 60),
                 'distancekm' => (int) floor($this->completedSets($user, $start, $end)->sum('distance_km')),
+                'steps' => app(StepTrackingService::class)->stepsBetween(
+                    $user,
+                    $quest->assigned_date->toDateString(),
+                    ($quest->expires_at ?? now())->toDateString(),
+                ),
                 default => null,
             };
 

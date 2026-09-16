@@ -46,7 +46,9 @@ Work that closed those gaps, plus features no milestone covered.
 | --- | --- |
 | Calendar page | Built: month grid, agenda, year heatmap |
 | Live workout | CSRF, set advance, completion, timed exercises, rest from server config |
-| Mission progress | `WaterLitres`, `ActiveDays`, `TrainingMinutes`, `DistanceKm` wired; `Steps` retired (nothing records steps) |
+| Mission progress | `WaterLitres`, `ActiveDays`, `TrainingMinutes`, `DistanceKm` and `Steps` all wired |
+| Nutrition | Targets from lean mass, training volume and goal; meals logged against them, with a 7-day trend |
+| Steps | Recorded by hand per day, charted, and feeding the step mission |
 | Program editor | Full CRUD, policy, nested validation; system programs copy-to-edit |
 | Mid-mission editing | Add, remove, reorder and resize exercises without losing logged sets |
 | Hydration | `water_logs`, timezone-aware totals, weight-scaled target, card + modal, 7-day trend |
@@ -91,11 +93,8 @@ canvas break the build rather than needing to be spotted in a picture.
 Nothing is currently blocking, and no placeholder data remains in the app.
 Candidates, roughly by value:
 
-- **Step tracking** — the retired "Reach 8,000 steps" mission can come back if a
-  step source is added. Nothing in the app records steps today, which is why it
-  ships deactivated.
-- **Nutrition history** — meals are logged per day; a multi-day trend like the
-  hydration chart would need a `history()` on `NutritionService`.
+- **Wearable import** — steps are entered by hand. A device or health-platform
+  import would remove the typing, and could backfill weight and heart rate too.
 - **Market** — page exists as a coming-soon placeholder.
 - **Program editing while enrolled** — locked today, because rebuilding
   structure nulls `workouts.program_day_id` and strands the enrollment. Lifting

@@ -120,6 +120,44 @@ class NutritionService
         ]);
     }
 
+    /**
+     * Daily calorie totals for the last `$days` days, oldest first, including
+     * days with nothing logged so the series has no gaps to read around.
+     *
+     * @return array{targetCalories: int, averageCalories: int, daysLogged: int, days: int, series: array<int, array{date: string, label: string, calories: int, percent: int, over: bool}>}
+     */
+    public function historySummary(User $user, int $days = 7): array
+    {
+        $target = $this->targetsFor($user)['calories'];
+        $timezone = $user->timezone();
+        $series = [];
+
+        for ($offset = $days - 1; $offset >= 0; $offset--) {
+            $day = now()->setTimezone($timezone)->subDays($offset);
+            $calories = (int) $this->entriesForDay($user, $day)->sum('calories');
+
+            $series[] = [
+                'date' => $day->toDateString(),
+                'label' => $day->format('D'),
+                'calories' => $calories,
+                'percent' => $target > 0 ? min(100, (int) round($calories / $target * 100)) : 0,
+                'over' => $calories > $target,
+            ];
+        }
+
+        // Averaging only the days actually logged; empty days are missing data,
+        // not a day of eating nothing, and would drag the average to nonsense.
+        $logged = array_filter(array_column($series, 'calories'));
+
+        return [
+            'targetCalories' => $target,
+            'averageCalories' => $logged === [] ? 0 : (int) round(array_sum($logged) / count($logged)),
+            'daysLogged' => count($logged),
+            'days' => $days,
+            'series' => $series,
+        ];
+    }
+
     public function log(User $user, array $data): FoodLog
     {
         return $user->foodLogs()->create([
