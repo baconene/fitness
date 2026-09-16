@@ -207,6 +207,170 @@ class WorkoutExerciseEditingTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_an_exercise_can_be_reordered_within_an_active_mission(): void
+    {
+        $user = $this->awakenedUser();
+        $workout = $this->activeWorkout($user, $this->exercise('Bench Press'));
+
+        foreach (['Barbell Row', 'Overhead Press'] as $name) {
+            $this->actingAs($user)->post(
+                route('workouts.exercises.add', $workout),
+                ['exercise_id' => $this->exercise($name)->id, 'sets' => 2],
+            );
+        }
+
+        $last = $workout->workoutExercises()->where('order', 3)->firstOrFail();
+
+        $this->actingAs($user)
+            ->patch(route('workouts.exercises.move', ['workout' => $workout, 'workoutExercise' => $last]), ['direction' => 'up'])
+            ->assertRedirect();
+
+        $this->assertSame(2, (int) $last->refresh()->order);
+        $this->assertSame([1, 2, 3], $workout->workoutExercises()->orderBy('order')->pluck('order')->all());
+    }
+
+    public function test_reordering_carries_logged_sets_with_the_exercise(): void
+    {
+        $user = $this->awakenedUser();
+        $workout = $this->activeWorkout($user, $this->exercise('Bench Press'));
+        $this->actingAs($user)->post(
+            route('workouts.exercises.add', $workout),
+            ['exercise_id' => $this->exercise('Barbell Row')->id, 'sets' => 2],
+        );
+
+        $first = $workout->workoutExercises()->where('order', 1)->firstOrFail();
+        $set = $first->workoutSets()->first();
+
+        $this->actingAs($user)->postJson(
+            route('workouts.sets.complete', ['workout' => $workout, 'set' => $set]),
+            ['reps' => 8, 'weight' => 50, 'rpe' => 6, 'idempotency_key' => fake()->uuid()],
+        )->assertStatus(200);
+
+        $this->actingAs($user)->patch(
+            route('workouts.exercises.move', ['workout' => $workout, 'workoutExercise' => $first]),
+            ['direction' => 'down'],
+        )->assertRedirect();
+
+        $this->assertSame(2, (int) $first->refresh()->order);
+        $this->assertDatabaseHas('workout_sets', ['id' => $set->id, 'is_completed' => true, 'reps_completed' => 8]);
+    }
+
+    public function test_moving_past_either_end_is_a_no_op(): void
+    {
+        $user = $this->awakenedUser();
+        $workout = $this->activeWorkout($user, $this->exercise('Bench Press'));
+        $this->actingAs($user)->post(
+            route('workouts.exercises.add', $workout),
+            ['exercise_id' => $this->exercise('Barbell Row')->id, 'sets' => 2],
+        );
+
+        $first = $workout->workoutExercises()->where('order', 1)->firstOrFail();
+
+        $this->actingAs($user)->patch(
+            route('workouts.exercises.move', ['workout' => $workout, 'workoutExercise' => $first]),
+            ['direction' => 'up'],
+        )->assertRedirect();
+
+        $this->assertSame([1, 2], $workout->workoutExercises()->orderBy('order')->pluck('order')->all());
+        $this->assertSame(1, (int) $first->refresh()->order);
+    }
+
+    public function test_sets_can_be_added_and_removed_mid_mission(): void
+    {
+        $user = $this->awakenedUser();
+        $workout = $this->activeWorkout($user, $this->exercise('Bench Press'), 2);
+        $workoutExercise = $workout->workoutExercises()->firstOrFail();
+
+        $this->actingAs($user)
+            ->patch(route('workouts.exercises.sets', ['workout' => $workout, 'workoutExercise' => $workoutExercise]), ['sets' => 4])
+            ->assertRedirect();
+
+        $this->assertSame([1, 2, 3, 4], $workoutExercise->workoutSets()->orderBy('set_number')->pluck('set_number')->all());
+
+        $this->actingAs($user)
+            ->patch(route('workouts.exercises.sets', ['workout' => $workout, 'workoutExercise' => $workoutExercise]), ['sets' => 2])
+            ->assertRedirect();
+
+        $this->assertSame([1, 2], $workoutExercise->workoutSets()->orderBy('set_number')->pluck('set_number')->all());
+    }
+
+    public function test_the_set_count_cannot_drop_below_what_is_already_logged(): void
+    {
+        $user = $this->awakenedUser();
+        $workout = $this->activeWorkout($user, $this->exercise('Bench Press'), 3);
+        $workoutExercise = $workout->workoutExercises()->firstOrFail();
+
+        foreach ($workoutExercise->workoutSets()->orderBy('set_number')->take(2)->get() as $set) {
+            $this->actingAs($user)->postJson(
+                route('workouts.sets.complete', ['workout' => $workout, 'set' => $set]),
+                ['reps' => 8, 'weight' => 50, 'rpe' => 6, 'idempotency_key' => fake()->uuid()],
+            )->assertStatus(200);
+        }
+
+        $this->actingAs($user)
+            ->patch(route('workouts.exercises.sets', ['workout' => $workout, 'workoutExercise' => $workoutExercise]), ['sets' => 1])
+            ->assertSessionHasErrors('sets');
+
+        $this->assertSame(3, $workoutExercise->workoutSets()->count(), 'Logged sets must survive.');
+    }
+
+    public function test_shrinking_removes_untrained_sets_only(): void
+    {
+        $user = $this->awakenedUser();
+        $workout = $this->activeWorkout($user, $this->exercise('Bench Press'), 4);
+        $workoutExercise = $workout->workoutExercises()->firstOrFail();
+        $logged = $workoutExercise->workoutSets()->orderBy('set_number')->first();
+
+        $this->actingAs($user)->postJson(
+            route('workouts.sets.complete', ['workout' => $workout, 'set' => $logged]),
+            ['reps' => 8, 'weight' => 50, 'rpe' => 6, 'idempotency_key' => fake()->uuid()],
+        )->assertStatus(200);
+
+        $this->actingAs($user)
+            ->patch(route('workouts.exercises.sets', ['workout' => $workout, 'workoutExercise' => $workoutExercise]), ['sets' => 2])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('workout_sets', ['id' => $logged->id, 'is_completed' => true]);
+        $this->assertSame(2, $workoutExercise->workoutSets()->count());
+    }
+
+    public function test_a_completed_mission_cannot_be_reordered_or_resized(): void
+    {
+        $user = $this->awakenedUser();
+        $workout = $this->activeWorkout($user, $this->exercise('Bench Press'), 1);
+        $workoutExercise = $workout->workoutExercises()->firstOrFail();
+
+        $this->actingAs($user)->postJson(
+            route('workouts.sets.complete', ['workout' => $workout, 'set' => $workoutExercise->workoutSets()->first()]),
+            ['reps' => 10, 'weight' => 60, 'rpe' => 7, 'idempotency_key' => fake()->uuid()],
+        )->assertStatus(200);
+        $this->actingAs($user)->post(route('workouts.complete', $workout))->assertRedirect();
+
+        $this->actingAs($user)
+            ->patch(route('workouts.exercises.sets', ['workout' => $workout, 'workoutExercise' => $workoutExercise]), ['sets' => 3])
+            ->assertSessionHasErrors('workout');
+
+        $this->actingAs($user)
+            ->patch(route('workouts.exercises.move', ['workout' => $workout, 'workoutExercise' => $workoutExercise]), ['direction' => 'up'])
+            ->assertSessionHasErrors('workout');
+    }
+
+    public function test_a_hunter_cannot_reorder_someone_elses_mission(): void
+    {
+        $owner = $this->awakenedUser();
+        $intruder = $this->awakenedUser();
+        $workout = $this->activeWorkout($owner, $this->exercise('Bench Press'));
+        $workoutExercise = $workout->workoutExercises()->firstOrFail();
+
+        $this->actingAs($intruder)
+            ->patch(route('workouts.exercises.move', ['workout' => $workout, 'workoutExercise' => $workoutExercise]), ['direction' => 'down'])
+            ->assertForbidden();
+
+        $this->actingAs($intruder)
+            ->patch(route('workouts.exercises.sets', ['workout' => $workout, 'workoutExercise' => $workoutExercise]), ['sets' => 5])
+            ->assertForbidden();
+    }
+
     public function test_the_live_page_sends_the_exercise_catalogue_for_the_add_picker(): void
     {
         $user = $this->awakenedUser();

@@ -153,6 +153,78 @@ class WorkoutService
     }
 
     /**
+     * Moves an exercise up or down the running order.
+     *
+     * Only the ordering changes: sets and their logged results travel with the
+     * exercise, so this stays safe mid-mission.
+     */
+    public function moveExercise(Workout $workout, WorkoutExercise $workoutExercise, int $offset): void
+    {
+        DB::transaction(function () use ($workout, $workoutExercise, $offset): void {
+            $workout = $workout->newQuery()->lockForUpdate()->findOrFail($workout->id);
+
+            if ($workout->status === 'completed') {
+                throw ValidationException::withMessages(['workout' => 'Completed missions are part of your permanent training history.']);
+            }
+
+            $ordered = $workout->workoutExercises()->orderBy('order')->get();
+            $from = $ordered->search(fn (WorkoutExercise $entry): bool => $entry->id === $workoutExercise->id);
+            $to = $from + $offset;
+
+            if ($from === false || $to < 0 || $to >= $ordered->count()) {
+                return;
+            }
+
+            $moved = $ordered->pull($from);
+            $ordered->splice($to, 0, [$moved]);
+
+            $ordered->values()->each(fn (WorkoutExercise $entry, int $index) => $entry->update(['order' => $index + 1]));
+        });
+    }
+
+    /**
+     * Adds or removes trailing sets so an exercise has exactly `$sets` of them.
+     *
+     * Completed sets are never destroyed, so the count cannot drop below what
+     * has already been logged.
+     */
+    public function setExerciseSetCount(Workout $workout, WorkoutExercise $workoutExercise, int $sets): void
+    {
+        DB::transaction(function () use ($workout, $workoutExercise, $sets): void {
+            $workout = $workout->newQuery()->lockForUpdate()->findOrFail($workout->id);
+
+            if ($workout->status === 'completed') {
+                throw ValidationException::withMessages(['workout' => 'Completed missions are part of your permanent training history.']);
+            }
+
+            $completed = $workoutExercise->workoutSets()->where('is_completed', true)->count();
+
+            if ($sets < $completed) {
+                throw ValidationException::withMessages([
+                    'sets' => "You have already logged {$completed} sets for this exercise.",
+                ]);
+            }
+
+            $current = $workoutExercise->workoutSets()->count();
+
+            if ($sets > $current) {
+                for ($number = $current + 1; $number <= $sets; $number++) {
+                    $workoutExercise->workoutSets()->create(['set_number' => $number]);
+                }
+
+                return;
+            }
+
+            $workoutExercise->workoutSets()->where('is_completed', false)
+                ->orderByDesc('set_number')->take($current - $sets)->get()
+                ->each(fn (WorkoutSet $set) => $set->delete());
+
+            $workoutExercise->workoutSets()->orderBy('set_number')->get()
+                ->each(fn (WorkoutSet $set, int $index) => $set->update(['set_number' => $index + 1]));
+        });
+    }
+
+    /**
      * Drops an exercise that has not been trained yet, keeping `order` contiguous.
      */
     public function removeExercise(Workout $workout, WorkoutExercise $workoutExercise): void

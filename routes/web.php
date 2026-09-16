@@ -43,6 +43,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/workouts/{workout}', [WorkoutController::class, 'update'])->name('workouts.update');
     Route::post('/workouts/{workout}/start', [WorkoutController::class, 'start'])->name('workouts.start');
     Route::post('/workouts/{workout}/exercises', [WorkoutController::class, 'addExercise'])->name('workouts.exercises.add');
+    Route::patch('/workouts/{workout}/exercises/{workoutExercise}/move', [WorkoutController::class, 'moveExercise'])->name('workouts.exercises.move');
+    Route::patch('/workouts/{workout}/exercises/{workoutExercise}/sets', [WorkoutController::class, 'updateExerciseSets'])->name('workouts.exercises.sets');
     Route::delete('/workouts/{workout}/exercises/{workoutExercise}', [WorkoutController::class, 'removeExercise'])->name('workouts.exercises.remove');
     Route::get('/workouts/{workout}/live', [LiveWorkoutController::class, 'show'])->name('workouts.live.show');
     Route::post('/workouts/{workout}/sets/{set}/complete', [LiveWorkoutController::class, 'completeSet'])->name('workouts.sets.complete');

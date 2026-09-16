@@ -87,6 +87,51 @@ const removeExercise = (exercise) => {
         },
     });
 };
+
+const request = (perform) => {
+    if (pending.value) {
+        return;
+    }
+
+    pending.value = true;
+    errorMessage.value = '';
+
+    perform({
+        preserveScroll: true,
+        onError: (errors) => {
+            errorMessage.value = Object.values(errors).flat().join(' ');
+        },
+        onFinish: () => {
+            pending.value = false;
+        },
+    });
+};
+
+const moveExercise = (exercise, direction) =>
+    request((options) =>
+        router.patch(
+            route('workouts.exercises.move', { workout: props.workoutId, workoutExercise: exercise.id }),
+            { direction },
+            options,
+        ),
+    );
+
+/** Sets cannot drop below what has already been logged, so the floor moves up. */
+const changeSets = (exercise, delta) => {
+    const sets = exercise.sets + delta;
+
+    if (sets < Math.max(1, exercise.completedSets) || sets > 10) {
+        return;
+    }
+
+    request((options) =>
+        router.patch(
+            route('workouts.exercises.sets', { workout: props.workoutId, workoutExercise: exercise.id }),
+            { sets },
+            options,
+        ),
+    );
+};
 </script>
 
 <template>
@@ -116,10 +161,57 @@ const removeExercise = (exercise) => {
                     </span>
                 </div>
 
-                <div class="flex shrink-0 items-center gap-2">
-                    <span class="text-[12px] tabular-nums text-muted">
+                <div class="flex shrink-0 items-center gap-1.5">
+                    <!-- Set count; the floor is whatever has already been logged. -->
+                    <template v-if="editable">
+                        <button
+                            type="button"
+                            :aria-label="`Remove a set from ${exercise.name}`"
+                            class="sys-pill min-h-8 px-2 hover:border-brand/50 disabled:opacity-30"
+                            :disabled="pending || exercise.sets <= Math.max(1, exercise.completedSets)"
+                            @click="changeSets(exercise, -1)"
+                        >
+                            −
+                        </button>
+                        <span class="min-w-[54px] text-center text-[12px] tabular-nums text-muted">
+                            {{ exercise.completedSets }}/{{ exercise.sets }}
+                        </span>
+                        <button
+                            type="button"
+                            :aria-label="`Add a set to ${exercise.name}`"
+                            class="sys-pill min-h-8 px-2 hover:border-brand/50 disabled:opacity-30"
+                            :disabled="pending || exercise.sets >= 10"
+                            @click="changeSets(exercise, 1)"
+                        >
+                            +
+                        </button>
+                    </template>
+                    <span v-else class="text-[12px] tabular-nums text-muted">
                         {{ exercise.completedSets }}/{{ exercise.sets }} sets
                     </span>
+
+                    <!-- Reorder; sets and their results travel with the exercise. -->
+                    <template v-if="editable && exercises.length > 1">
+                        <button
+                            type="button"
+                            :aria-label="`Move ${exercise.name} earlier`"
+                            class="sys-pill min-h-8 px-2 hover:border-brand/50 disabled:opacity-30"
+                            :disabled="pending || index === 0"
+                            @click="moveExercise(exercise, 'up')"
+                        >
+                            <Icon name="chevronDown" :size="11" class="rotate-180" />
+                        </button>
+                        <button
+                            type="button"
+                            :aria-label="`Move ${exercise.name} later`"
+                            class="sys-pill min-h-8 px-2 hover:border-brand/50 disabled:opacity-30"
+                            :disabled="pending || index === exercises.length - 1"
+                            @click="moveExercise(exercise, 'down')"
+                        >
+                            <Icon name="chevronDown" :size="11" />
+                        </button>
+                    </template>
+
                     <button
                         v-if="editable && exercise.completedSets === 0 && exercises.length > 1"
                         type="button"

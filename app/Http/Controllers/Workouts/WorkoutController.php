@@ -15,6 +15,7 @@ use App\Services\WorkoutService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -75,6 +76,31 @@ class WorkoutController extends Controller
         $this->workoutService->addExercise($workout, $data['exercise_id'], $data['sets']);
 
         return back()->with('success', 'Exercise added to this mission.');
+    }
+
+    /**
+     * Reorders an exercise within a mission. Sets and their results move with it.
+     */
+    public function moveExercise(Request $request, Workout $workout, WorkoutExercise $workoutExercise): RedirectResponse
+    {
+        Gate::authorize('update', $workout);
+        abort_unless($workoutExercise->workout_id === $workout->id, 403);
+
+        $data = $request->validate(['direction' => ['required', Rule::in(['up', 'down'])]]);
+        $this->workoutService->moveExercise($workout, $workoutExercise, $data['direction'] === 'up' ? -1 : 1);
+
+        return back()->with('success', 'Mission order updated.');
+    }
+
+    public function updateExerciseSets(Request $request, Workout $workout, WorkoutExercise $workoutExercise): RedirectResponse
+    {
+        Gate::authorize('update', $workout);
+        abort_unless($workoutExercise->workout_id === $workout->id, 403);
+
+        $data = $request->validate(['sets' => ['required', 'integer', 'between:1,10']]);
+        $this->workoutService->setExerciseSetCount($workout, $workoutExercise, $data['sets']);
+
+        return back()->with('success', 'Set count updated.');
     }
 
     public function removeExercise(Request $request, Workout $workout, WorkoutExercise $workoutExercise): RedirectResponse
