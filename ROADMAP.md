@@ -88,11 +88,12 @@ canvas break the build rather than needing to be spotted in a picture.
 
 ## Open
 
-Nothing is currently blocking. Candidates, roughly by value:
+Nothing is currently blocking, and no placeholder data remains in the app.
+Candidates, roughly by value:
 
-- **Nutrition** — `calorieTarget` and the macro split on the dashboard are still
-  hard-coded placeholders in `DashboardController::health()`. The only remaining
-  fake numbers in the app.
+- **Food logging** — `NutritionService` derives daily energy and macro targets
+  from lean mass, training volume and goal, but nothing records what was
+  actually eaten, so the card shows a target rather than intake against it.
 - **Step tracking** — the retired "Reach 8,000 steps" mission can come back if a
   step source is added.
 - **Market** — page exists as a coming-soon placeholder.

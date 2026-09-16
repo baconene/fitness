@@ -1,12 +1,25 @@
 <script setup>
+import { computed } from 'vue';
 import Icon from '@/Components/Icon.vue';
 
-defineProps({
-    calorieTarget: { type: Number, default: 0 },
-    carbPercent: { type: Number, default: 55 },
-    proteinPercent: { type: Number, default: 25 },
-    fatPercent: { type: Number, default: 20 },
+const props = defineProps({
+    calories: { type: Number, default: 0 },
+    protein: { type: Number, default: 0 },
+    carbs: { type: Number, default: 0 },
+    fat: { type: Number, default: 0 },
+    carbPercent: { type: Number, default: 0 },
+    proteinPercent: { type: Number, default: 0 },
+    fatPercent: { type: Number, default: 0 },
+    /** How the figure was derived, so the card does not imply false precision. */
+    basis: { type: String, default: '' },
+    isEstimated: { type: Boolean, default: false },
 });
+
+const macros = computed(() => [
+    { key: 'carbs', label: 'Carbs', grams: props.carbs, percent: props.carbPercent, tint: 'bg-brand' },
+    { key: 'protein', label: 'Protein', grams: props.protein, percent: props.proteinPercent, tint: 'bg-violet-light' },
+    { key: 'fat', label: 'Fat', grams: props.fat, percent: props.fatPercent, tint: 'bg-orange-400' },
+]);
 </script>
 
 <template>
@@ -17,43 +30,29 @@ defineProps({
             </span>
 
             <div class="min-w-0">
-                <p class="sys-label-sm">Calorie Intake</p>
-                <p class="mt-1 text-[32px] font-semibold leading-none text-content">
-                    {{ calorieTarget.toLocaleString() }}
+                <p class="sys-label-sm">Daily Target</p>
+                <p class="mt-1 text-[32px] font-semibold leading-none tabular-nums text-content">
+                    {{ calories.toLocaleString() }}
                 </p>
                 <p class="mt-1.5 text-[13px] text-muted">kcal / day</p>
             </div>
         </div>
 
-        <!-- Macro split -->
+        <!-- Macro split, in grams rather than percentages alone. -->
         <div class="mt-4 grid grid-cols-3 gap-2">
-            <div>
+            <div v-for="macro in macros" :key="macro.key">
                 <div class="sys-track">
-                    <div
-                        class="h-full rounded-full bg-brand"
-                        :style="{ width: carbPercent + '%' }"
-                    />
+                    <div class="h-full rounded-full" :class="macro.tint" :style="{ width: macro.percent + '%' }" />
                 </div>
-                <p class="mt-1.5 text-[10px] text-muted">{{ carbPercent }}% Carbs</p>
-            </div>
-            <div>
-                <div class="sys-track">
-                    <div
-                        class="h-full rounded-full bg-violet-light"
-                        :style="{ width: proteinPercent + '%' }"
-                    />
-                </div>
-                <p class="mt-1.5 text-[10px] text-muted">{{ proteinPercent }}% Protein</p>
-            </div>
-            <div>
-                <div class="sys-track">
-                    <div
-                        class="h-full rounded-full bg-orange-400"
-                        :style="{ width: fatPercent + '%' }"
-                    />
-                </div>
-                <p class="mt-1.5 text-[10px] text-muted">{{ fatPercent }}% Fat</p>
+                <p class="mt-1.5 text-[10px] text-muted">
+                    <span class="tabular-nums text-content/80">{{ macro.grams }}g</span>
+                    {{ macro.label }}
+                </p>
             </div>
         </div>
+
+        <p v-if="basis" class="mt-3 text-[10px] leading-relaxed text-muted/80">
+            {{ basis }}.<template v-if="isEstimated"> Log body fat for a closer estimate.</template>
+        </p>
     </article>
 </template>

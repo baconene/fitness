@@ -12,6 +12,7 @@ use App\Services\DungeonService;
 use App\Services\ExperienceService;
 use App\Services\HydrationService;
 use App\Services\InventoryService;
+use App\Services\NutritionService;
 use App\Services\QuestGenerationService;
 use App\Services\RankService;
 use App\Services\SkillService;
@@ -43,6 +44,7 @@ class DashboardController extends Controller
         private SkillService $skillService,
         private DungeonService $dungeonService,
         private HydrationService $hydrationService,
+        private NutritionService $nutritionService,
     ) {}
 
     public function show(): Response|RedirectResponse
@@ -157,12 +159,7 @@ class DashboardController extends Controller
             'heightCm' => $measurement?->height_cm,
             'weightKg' => $measurement?->weight_kg,
 
-            // Nutrition is not modelled yet — these remain display placeholders
-            // until the targets are derived from the user profile.
-            'calorieTarget' => 2450,
-            'carbPercent' => 55,
-            'proteinPercent' => 25,
-            'fatPercent' => 20,
+            'nutrition' => $this->nutritionService->targetsFor($user),
 
             'water' => $this->hydrationService->summary($user),
         ];

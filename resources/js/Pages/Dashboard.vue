@@ -86,10 +86,15 @@ onMounted(() => {
                             :healthy-range="health.healthyBmiRange"
                         />
                         <CalorieCard
-                            :calorie-target="health.calorieTarget"
-                            :carb-percent="health.carbPercent"
-                            :protein-percent="health.proteinPercent"
-                            :fat-percent="health.fatPercent"
+                            :calories="health.nutrition.calories"
+                            :protein="health.nutrition.protein"
+                            :carbs="health.nutrition.carbs"
+                            :fat="health.nutrition.fat"
+                            :carb-percent="health.nutrition.carbPercent"
+                            :protein-percent="health.nutrition.proteinPercent"
+                            :fat-percent="health.nutrition.fatPercent"
+                            :basis="health.nutrition.basis"
+                            :is-estimated="health.nutrition.isEstimated"
                         />
                         <WaterCard
                             :consumed-ml="health.water.consumedMl"
