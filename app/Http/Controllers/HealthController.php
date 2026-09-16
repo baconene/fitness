@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Enums\GoalType;
 use App\Models\FitnessGoal;
+use App\Models\FoodLog;
 use App\Models\WaterLog;
 use App\Services\HydrationService;
+use App\Services\NutritionService;
 use App\Services\QuestGenerationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -69,6 +71,32 @@ class HealthController extends Controller
     {
         $hydration->delete($request->user(), $waterLog);
         $quests->synchronizeProgress($request->user());
+
+        return back()->with('success', 'Entry removed.');
+    }
+
+    /**
+     * Records something eaten. Macros are optional — a quick entry may only
+     * carry a calorie count.
+     */
+    public function storeFoodLog(Request $request, NutritionService $nutrition): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'calories' => ['required', 'integer', 'between:1,10000'],
+            'protein_g' => ['nullable', 'integer', 'between:0,1000'],
+            'carbs_g' => ['nullable', 'integer', 'between:0,1000'],
+            'fat_g' => ['nullable', 'integer', 'between:0,1000'],
+        ]);
+
+        $nutrition->log($request->user(), $data);
+
+        return back()->with('success', 'Meal logged.');
+    }
+
+    public function destroyFoodLog(Request $request, FoodLog $foodLog, NutritionService $nutrition): RedirectResponse
+    {
+        $nutrition->delete($request->user(), $foodLog);
 
         return back()->with('success', 'Entry removed.');
     }

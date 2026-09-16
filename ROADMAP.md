@@ -91,11 +91,11 @@ canvas break the build rather than needing to be spotted in a picture.
 Nothing is currently blocking, and no placeholder data remains in the app.
 Candidates, roughly by value:
 
-- **Food logging** — `NutritionService` derives daily energy and macro targets
-  from lean mass, training volume and goal, but nothing records what was
-  actually eaten, so the card shows a target rather than intake against it.
 - **Step tracking** — the retired "Reach 8,000 steps" mission can come back if a
-  step source is added.
+  step source is added. Nothing in the app records steps today, which is why it
+  ships deactivated.
+- **Nutrition history** — meals are logged per day; a multi-day trend like the
+  hydration chart would need a `history()` on `NutritionService`.
 - **Market** — page exists as a coming-soon placeholder.
 - **Program editing while enrolled** — locked today, because rebuilding
   structure nulls `workouts.program_day_id` and strands the enrollment. Lifting

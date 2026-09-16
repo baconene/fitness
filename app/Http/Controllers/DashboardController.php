@@ -159,7 +159,7 @@ class DashboardController extends Controller
             'heightCm' => $measurement?->height_cm,
             'weightKg' => $measurement?->weight_kg,
 
-            'nutrition' => $this->nutritionService->targetsFor($user),
+            'nutrition' => $this->nutritionService->dayFor($user),
 
             'water' => $this->hydrationService->summary($user),
         ];

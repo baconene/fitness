@@ -3,7 +3,10 @@
 namespace App\Services;
 
 use App\Enums\GoalType;
+use App\Models\FoodLog;
 use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Support\Collection;
 
 /**
  * Derives daily energy and macronutrient targets from the data the app already
@@ -71,6 +74,81 @@ class NutritionService
             $lean ? 'Lean mass and training volume' : 'Bodyweight and training volume',
             ! $bodyFat,
         );
+    }
+
+    /**
+     * What has actually been eaten today, against the target.
+     *
+     * Day boundaries follow the user's timezone rather than the server's, so a
+     * late meal counts towards the right day.
+     *
+     * @return array{
+     *     targets: array<string, mixed>,
+     *     calories: int, protein: int, carbs: int, fat: int,
+     *     percent: int, remaining: int,
+     *     entries: array<int, array{id: int, name: string, calories: int, protein: ?int, carbs: ?int, fat: ?int, loggedAt: string}>
+     * }
+     */
+    public function dayFor(User $user, ?Carbon $moment = null): array
+    {
+        $targets = $this->targetsFor($user);
+        $entries = $this->entriesForDay($user, $moment);
+
+        $consumed = [
+            'calories' => (int) $entries->sum('calories'),
+            'protein' => (int) $entries->sum('protein_g'),
+            'carbs' => (int) $entries->sum('carbs_g'),
+            'fat' => (int) $entries->sum('fat_g'),
+        ];
+
+        return array_merge($consumed, [
+            'targets' => $targets,
+            'percent' => $targets['calories'] > 0
+                ? min(100, (int) round($consumed['calories'] / $targets['calories'] * 100))
+                : 0,
+            // Can go negative: being over the target is worth showing plainly.
+            'remaining' => $targets['calories'] - $consumed['calories'],
+            'entries' => $entries->map(fn (FoodLog $log): array => [
+                'id' => $log->id,
+                'name' => $log->name,
+                'calories' => $log->calories,
+                'protein' => $log->protein_g,
+                'carbs' => $log->carbs_g,
+                'fat' => $log->fat_g,
+                'loggedAt' => $log->logged_at->setTimezone($user->timezone())->format('H:i'),
+            ])->all(),
+        ]);
+    }
+
+    public function log(User $user, array $data): FoodLog
+    {
+        return $user->foodLogs()->create([
+            'name' => $data['name'],
+            'calories' => $data['calories'],
+            'protein_g' => $data['protein_g'] ?? null,
+            'carbs_g' => $data['carbs_g'] ?? null,
+            'fat_g' => $data['fat_g'] ?? null,
+            'logged_at' => now(),
+        ]);
+    }
+
+    public function delete(User $user, FoodLog $log): void
+    {
+        abort_unless($log->user_id === $user->id, 403);
+
+        $log->delete();
+    }
+
+    /**
+     * @return Collection<int, FoodLog>
+     */
+    private function entriesForDay(User $user, ?Carbon $moment = null): Collection
+    {
+        $local = ($moment ? $moment->copy() : now())->setTimezone($user->timezone());
+
+        return $user->foodLogs()
+            ->whereBetween('logged_at', [$local->copy()->startOfDay()->utc(), $local->copy()->endOfDay()->utc()])
+            ->orderByDesc('logged_at')->orderByDesc('id')->get();
     }
 
     /**

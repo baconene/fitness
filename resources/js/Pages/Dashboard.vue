@@ -90,11 +90,10 @@ onMounted(() => {
                             :protein="health.nutrition.protein"
                             :carbs="health.nutrition.carbs"
                             :fat="health.nutrition.fat"
-                            :carb-percent="health.nutrition.carbPercent"
-                            :protein-percent="health.nutrition.proteinPercent"
-                            :fat-percent="health.nutrition.fatPercent"
-                            :basis="health.nutrition.basis"
-                            :is-estimated="health.nutrition.isEstimated"
+                            :percent="health.nutrition.percent"
+                            :remaining="health.nutrition.remaining"
+                            :targets="health.nutrition.targets"
+                            :entries="health.nutrition.entries"
                         />
                         <WaterCard
                             :consumed-ml="health.water.consumedMl"

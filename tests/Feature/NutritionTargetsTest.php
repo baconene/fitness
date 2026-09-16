@@ -153,10 +153,12 @@ class NutritionTargetsTest extends TestCase
         $this->actingAs($user)
             ->get(route('dashboard'))
             ->assertStatus(200)
+            // The dashboard now serves intake against the target, so the
+            // derived figures live under `targets`.
             ->assertInertia(
                 fn ($page) => $page->has(
-                    'health.nutrition',
-                    fn ($nutrition) => $nutrition->hasAll([
+                    'health.nutrition.targets',
+                    fn ($targets) => $targets->hasAll([
                         'calories', 'protein', 'carbs', 'fat',
                         'carbPercent', 'proteinPercent', 'fatPercent',
                         'basis', 'goal', 'isEstimated',

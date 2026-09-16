@@ -97,6 +97,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/health/measurements', [HealthController::class, 'storeMeasurement'])->name('health.measurements.store');
     Route::post('/health/water', [HealthController::class, 'storeWaterLog'])->name('health.water.store');
     Route::delete('/health/water/{waterLog}', [HealthController::class, 'destroyWaterLog'])->name('health.water.destroy');
+    Route::post('/health/food', [HealthController::class, 'storeFoodLog'])->name('health.food.store');
+    Route::delete('/health/food/{foodLog}', [HealthController::class, 'destroyFoodLog'])->name('health.food.destroy');
     Route::post('/health/goals', [HealthController::class, 'storeGoal'])->name('health.goals.store');
     Route::patch('/health/goals/{goal}', [HealthController::class, 'updateGoal'])->name('health.goals.update');
 
